@@ -1,6 +1,6 @@
 # Worker to recieve units to process
 # created by Psymons and Entarius Fusion
-# (c)2022
+# (c) 2022
 
 import math
 import json
@@ -30,12 +30,6 @@ def next_lexicographic_permutation(x):
   x[i], x[j] = x[j], x[i]
   reverse(x, i + 1)
   return x
-
-def swap(arr, x, y):
-  temp = arr[x]
-  arr[x] = arr[y]
-  arr[y] = temp
-  return arr
 
 def reverse(arr, i):
   if i > len(arr) - 1:
