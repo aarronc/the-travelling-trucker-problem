@@ -58,12 +58,12 @@ else:
              sequence varchar(128),
              identifier varchar(37),
              send_count integer,
-             born_on varchar(30),
              result_1 text,
              result_2 text,
              result_3 text,
              sent_at varchar(30),
              finished_at varchar(30)
+             born_on varchar(30),
              )''')
   DB.commit()
   iteration = 0
@@ -77,7 +77,7 @@ for x in range(iteration,total_permutations):
   if y == 10_000_000:
     timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     print(f"[{timestamp}] {x:,} {perm}")
-    DB.execute("INSERT INTO numbers VALUES (?,?,?,?,?,?,?,?,?,?)",(x, str(perm), str(uuid.uuid4()), 0, str(timestamp), None, None, None, None, None))
+    DB.execute("INSERT INTO numbers VALUES (?,?,?,?,?,?,?,?,?,?)",(x, str(perm), str(uuid.uuid4()), 0, None, None, None, None, None, str(timestamp)))
     DB.commit()
     y = 0
   y+= 1
