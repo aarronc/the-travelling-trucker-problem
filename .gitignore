@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+number_generation/33_fact_iterations.db
+number_generation/33_fact_iterations.old
