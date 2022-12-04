@@ -62,7 +62,7 @@ else:
              result_2 text,
              result_3 text,
              sent_at varchar(30),
-             finished_at varchar(30)
+             finished_at varchar(30),
              born_on varchar(30),
              )''')
   DB.commit()
