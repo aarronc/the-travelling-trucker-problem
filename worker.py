@@ -120,7 +120,7 @@ while True:
 
   print("Time taken => {}".format(diff))
   print("Lowest distance => {}".format(lowest_total))
-  print("Lowest permutation => {} ".format(lowest_perm))
+  print("Lowest permutation => {} ".format(str(lowest_perm).replace(" ", "")))
 
   final = {}
   final['distance'] = lowest_total
