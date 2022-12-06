@@ -76,7 +76,9 @@ for x in range(iteration,total_permutations):
   perm = next_lexicographic_permutation(perm)
   if y == 10_000_000:
     timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    print(f"[{timestamp}] {x:,} {perm}")
+    stripped_perm = str(perm).replace(" ", "")
+    
+    print(f"[{timestamp}] {x:,} {stripped_perm}")
     DB.execute("INSERT INTO numbers VALUES (?,?,?,?,?,?,?,?,?,?)",(x, str(perm), str(uuid.uuid4()), 0, None, None, None, None, None, str(timestamp)))
     DB.commit()
     y = 0
