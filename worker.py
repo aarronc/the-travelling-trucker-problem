@@ -77,7 +77,7 @@ def clear():
 def output_things(iteration, lowest, identifier):
   clear()
   print("Truckers@Home")
-  print(f"Working on unit : {identifier}")
+  print("Working on unit : {:,.0f}".format(identifier))
   print("[{}] Checkpoint {:,.0f} / 10".format(datetime.datetime.now().strftime("%H:%M:%S"), iteration / 1_000_000))
   print("Lowest Distance found so far ({:,.3f})".format(lowest))
 
@@ -112,9 +112,10 @@ while True:
   data = x.json()
   ip = data['perm']
   identifier = data['identifier']
+  iteration = data['iteration']
   
   print("Truckers@Home")
-  print(f"Working on unit : {identifier}")
+  print("Working on unit : {:,.0f}".format(iteration))
   print("[{}] Checkpoint {:,.0f} / 10".format(datetime.datetime.now().strftime("%H:%M:%S"), 0))
 
   y = 0
@@ -122,7 +123,7 @@ while True:
   for x in range(1,10_000_000):
     y += 1
     if y == 1_000_000:
-      output_things(x, lowest_total, identifier)
+      output_things(x, lowest_total, iteration)
       y = 0
     
     distance = b[f"{ip[0]}-{ip[1]}"] + b[f"{ip[1]}-{ip[2]}"] + b[f"{ip[2]}-{ip[3]}"] + b[f"{ip[3]}-{ip[4]}"] + b[f"{ip[4]}-{ip[5]}"] + b[f"{ip[5]}-{ip[6]}"] + b[f"{ip[6]}-{ip[7]}"] + b[f"{ip[7]}-{ip[8]}"] + b[f"{ip[8]}-{ip[9]}"] + b[f"{ip[9]}-{ip[10]}"] + b[f"{ip[10]}-{ip[11]}"] + b[f"{ip[11]}-{ip[12]}"] + b[f"{ip[12]}-{ip[13]}"] + b[f"{ip[13]}-{ip[14]}"] + b[f"{ip[14]}-{ip[15]}"] + b[f"{ip[15]}-{ip[16]}"] + b[f"{ip[16]}-{ip[17]}"] + b[f"{ip[17]}-{ip[18]}"] + b[f"{ip[18]}-{ip[19]}"] + b[f"{ip[19]}-{ip[20]}"] + b[f"{ip[20]}-{ip[21]}"] + b[f"{ip[21]}-{ip[22]}"] + b[f"{ip[22]}-{ip[23]}"] + b[f"{ip[23]}-{ip[24]}"] + b[f"{ip[24]}-{ip[25]}"] + b[f"{ip[25]}-{ip[26]}"] + b[f"{ip[26]}-{ip[27]}"] + b[f"{ip[27]}-{ip[28]}"] + b[f"{ip[28]}-{ip[29]}"] + b[f"{ip[29]}-{ip[30]}"] + b[f"{ip[30]}-{ip[31]}"] + b[f"{ip[31]}-{ip[32]}"]   # strings are literal now
