@@ -1,12 +1,3 @@
-# An ESP32 implementation of the worker script
-# The esp32 needs to be flashed with micropython
-# as this has a wifi card we can uise it to connect to an
-# access point and retrieve data
-# todo -> make a controller or seperate path to issue these modest
-# workers a tiny work unit
-# ESP32 WROOM-D bechmarks @ 221 seconds for 10,000 iterations
-
-
 import math
 import json
 import time
@@ -60,29 +51,7 @@ def do_connect():
         sta_if.connect('Psymons SSID', 'Sucks Password')
         while not sta_if.isconnected():
             pass
-    print('network config:', sta_if.ifconfig())
-    
-def http_get(url):
-    import socket
-    _, _, host, path = url.split('/', 3)
-    addr = socket.getaddrinfo(host, 4567)[0][-1]
-    s = socket.socket()
-    s.connect(addr)
-    s.send(bytes('GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n' % (path, host), 'utf8'))
-    while True:
-        data = s.recv(100)
-        if data:
-            return str(data)
-        else:
-            break
-    s.close()
-    
-def strip_http_headers(http_reply):
-    p = http_reply.find('\r\n\r\n')
-    if p >= 0:
-        return http_reply[p:]
-    return http_reply
-    
+    print('network config:', sta_if.ifconfig())   
 
 print("Pre dict creation memory amount : {} bytes".format(gc.mem_free()))
 
@@ -121,17 +90,22 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
           "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
 
-get_url = 'http://136.244.76.145:4567/work.json'
+get_url = 'http://136.244.76.145:4567/tiny.json'
+post_url = 'http://136.244.76.145:4567/tiny'
 
 do_connect() # Connect to network
 
-# data = json.loads(requests.get(get_url).text)
-# print(data['perm'])
+data = json.loads(requests.get(get_url).text)
 
-STEPS = 10_000
+STEPS = 100_000
 lowest_distance = 9999
-ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-# ip = data['perm']
+# ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+ip = data['perm']
+orig_uuid = data['orig_identifier']
+tiny_uuid = data['tiny_identifier']
+iteration = data['iteration']
+work_unit = data['work_unit_number']
+
 gc.collect()
 b = {}
 for x in range(33):
@@ -177,6 +151,17 @@ finish = time.time()
 diff = finish - start
 print("Time Taken for a run of {} iterations : {} seconds".format(STEPS, diff))
 print("lowest distance in run : {}".format(lowest_distance))
+
+final = {}
+final['orig_identifier'] = orig_uuid
+final['tiny_identifier'] = tiny_uuid
+final['distance'] = lowest_distance
+final['work_unit_numbmer'] = work_unit
+final['iteration'] = iteration
+final = json.dumps(final)
+req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
+
+
 
 
 
