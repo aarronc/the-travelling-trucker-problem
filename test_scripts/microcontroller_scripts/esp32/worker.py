@@ -48,7 +48,7 @@ def do_connect():
     if not sta_if.isconnected():
         print('connecting to network...')
         sta_if.active(True)
-        sta_if.connect('Psymons SSID', 'Sucks Password')
+        sta_if.connect('<your SSID>', '<Your Password>')
         while not sta_if.isconnected():
             pass
     print('network config:', sta_if.ifconfig())   
@@ -95,17 +95,6 @@ post_url = 'http://136.244.76.145:4567/tiny'
 
 do_connect() # Connect to network
 
-data = json.loads(requests.get(get_url).text)
-
-STEPS = 100_000
-lowest_distance = 9999
-# ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-ip = data['perm']
-orig_uuid = data['orig_identifier']
-tiny_uuid = data['tiny_identifier']
-iteration = data['iteration']
-work_unit = data['work_unit_number']
-
 gc.collect()
 b = {}
 for x in range(33):
@@ -116,50 +105,60 @@ for x in range(33):
     else:
       b["{}-{}".format(x, y)] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
 
-# print("Post dict creation memory amount : {} bytes".format(gc.mem_free()))
-
-start = time.time()
-y = 0
-for x in range(STEPS):
-    distance = b[f"{ip[0]}-{ip[1]}"] + b[f"{ip[1]}-{ip[2]}"] + b[f"{ip[2]}-{ip[3]}"] +\
-    b[f"{ip[3]}-{ip[4]}"] + b[f"{ip[4]}-{ip[5]}"] + b[f"{ip[5]}-{ip[6]}"] +\
-    b[f"{ip[6]}-{ip[7]}"] + b[f"{ip[7]}-{ip[8]}"] + b[f"{ip[8]}-{ip[9]}"] +\
-    b[f"{ip[9]}-{ip[10]}"] + b[f"{ip[10]}-{ip[11]}"] + b[f"{ip[11]}-{ip[12]}"] +\
-    b[f"{ip[12]}-{ip[13]}"] + b[f"{ip[13]}-{ip[14]}"] + b[f"{ip[14]}-{ip[15]}"] +\
-    b[f"{ip[15]}-{ip[16]}"] + b[f"{ip[16]}-{ip[17]}"] + b[f"{ip[17]}-{ip[18]}"] +\
-    b[f"{ip[18]}-{ip[19]}"] + b[f"{ip[19]}-{ip[20]}"] + b[f"{ip[20]}-{ip[21]}"] +\
-    b[f"{ip[21]}-{ip[22]}"] + b[f"{ip[22]}-{ip[23]}"] + b[f"{ip[23]}-{ip[24]}"] +\
-    b[f"{ip[24]}-{ip[25]}"] + b[f"{ip[25]}-{ip[26]}"] + b[f"{ip[26]}-{ip[27]}"] +\
-    b[f"{ip[27]}-{ip[28]}"] + b[f"{ip[28]}-{ip[29]}"] + b[f"{ip[29]}-{ip[30]}"] +\
-    b[f"{ip[30]}-{ip[31]}"] + b[f"{ip[31]}-{ip[32]}"]
+while True:
+    data = json.loads(requests.get(get_url).text)
+    STEPS = 100_000
+    lowest_distance = 9999
+    # ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+    ip = data['perm']
+    orig_uuid = data['orig_identifier']
+    tiny_uuid = data['tiny_identifier']
+    iteration = data['iteration']
+    work_unit = data['work_unit_number']
+    start = time.time()
+    y = 0
+    print("Tiny Unit : {}".format(tiny_uuid))
+    for x in range(STEPS):
+        distance = b[f"{ip[0]}-{ip[1]}"] + b[f"{ip[1]}-{ip[2]}"] + b[f"{ip[2]}-{ip[3]}"] +\
+        b[f"{ip[3]}-{ip[4]}"] + b[f"{ip[4]}-{ip[5]}"] + b[f"{ip[5]}-{ip[6]}"] +\
+        b[f"{ip[6]}-{ip[7]}"] + b[f"{ip[7]}-{ip[8]}"] + b[f"{ip[8]}-{ip[9]}"] +\
+        b[f"{ip[9]}-{ip[10]}"] + b[f"{ip[10]}-{ip[11]}"] + b[f"{ip[11]}-{ip[12]}"] +\
+        b[f"{ip[12]}-{ip[13]}"] + b[f"{ip[13]}-{ip[14]}"] + b[f"{ip[14]}-{ip[15]}"] +\
+        b[f"{ip[15]}-{ip[16]}"] + b[f"{ip[16]}-{ip[17]}"] + b[f"{ip[17]}-{ip[18]}"] +\
+        b[f"{ip[18]}-{ip[19]}"] + b[f"{ip[19]}-{ip[20]}"] + b[f"{ip[20]}-{ip[21]}"] +\
+        b[f"{ip[21]}-{ip[22]}"] + b[f"{ip[22]}-{ip[23]}"] + b[f"{ip[23]}-{ip[24]}"] +\
+        b[f"{ip[24]}-{ip[25]}"] + b[f"{ip[25]}-{ip[26]}"] + b[f"{ip[26]}-{ip[27]}"] +\
+        b[f"{ip[27]}-{ip[28]}"] + b[f"{ip[28]}-{ip[29]}"] + b[f"{ip[29]}-{ip[30]}"] +\
+        b[f"{ip[30]}-{ip[31]}"] + b[f"{ip[31]}-{ip[32]}"]
     
-    if distance < lowest_distance:
-        lowest_distance = distance
+        if distance < lowest_distance:
+            lowest_distance = distance
+            print("[{:,}] New lowest distance found... it's {:,.2f} ly".format(x, lowest_distance))
     
     
-    if y == 500:
-        print ("Checkpoint {} / {}".format(x, STEPS))
-        # print("Memory Check : {} bytes".format(gc.mem_free()))
-        # gc.collect()
-        y = 0
+        if y == 500:
+            print ("Checkpoint {:,} / {:,}".format(x, STEPS))
+            # print("Memory Check : {} bytes".format(gc.mem_free()))
+            # gc.collect()
+            y = 0
         
-    y += 1           
-    ip = next_lexicographic_permutation(ip)
+        y += 1           
+        ip = next_lexicographic_permutation(ip)
     
-# print("Post run memory amount : {} bytes".format(gc.mem_free()))
-finish = time.time()
-diff = finish - start
-print("Time Taken for a run of {} iterations : {} seconds".format(STEPS, diff))
-print("lowest distance in run : {}".format(lowest_distance))
+    # print("Post run memory amount : {} bytes".format(gc.mem_free()))
+    finish = time.time()
+    diff = finish - start
+    print("Time Taken for a run of {:,.0f} iterations : {} seconds".format(STEPS, diff))
+    print("lowest distance in run : {}".format(lowest_distance))
 
-final = {}
-final['orig_identifier'] = orig_uuid
-final['tiny_identifier'] = tiny_uuid
-final['distance'] = lowest_distance
-final['work_unit_numbmer'] = work_unit
-final['iteration'] = iteration
-final = json.dumps(final)
-req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
+    final = {}
+    final['orig_identifier'] = orig_uuid
+    final['tiny_identifier'] = tiny_uuid
+    final['distance'] = lowest_distance
+    final['work_unit_numbmer'] = work_unit
+    final['iteration'] = iteration
+    final = json.dumps(final)
+    req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
 
 
 
