@@ -1,10 +1,16 @@
+# Time Taken for a run of 10000 iterations : 32 seconds
+# lowest distance in run : 1002.472
+
 import math
 import json
 import time
 import gc
 import network
 import urequests as requests
+import machine
 
+machine.freq(240000000)
+print(machine.freq())
 gc.enable()
 
 def next_lexicographic_permutation(x):
@@ -48,7 +54,7 @@ def do_connect():
     if not sta_if.isconnected():
         print('connecting to network...')
         sta_if.active(True)
-        sta_if.connect('<your SSID>', '<Your Password>')
+        sta_if.connect('ssid', 'password')
         while not sta_if.isconnected():
             pass
     print('network config:', sta_if.ifconfig())   
@@ -103,10 +109,10 @@ for x in range(33):
     if x == y: 
       continue 
     else:
-      b["{}-{}".format(x, y)] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
+      b[bytes((x, y))] = math.sqrt(((lookup[str(x)]['x'] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
       
 while True:
-    data = json.loads(requests.get(get_url).text)
+    data = json.loads((requests.get(get_url).text))
     STEPS = 100_000
     lowest_distance = 9999
     # ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
@@ -119,33 +125,28 @@ while True:
     y = 0
     print("Tiny Unit : {}".format(tiny_uuid))
     for x in range(STEPS):
-        distance = b[f"{ip[0]}-{ip[1]}"] + b[f"{ip[1]}-{ip[2]}"] + b[f"{ip[2]}-{ip[3]}"] +\
-        b[f"{ip[3]}-{ip[4]}"] + b[f"{ip[4]}-{ip[5]}"] + b[f"{ip[5]}-{ip[6]}"] +\
-        b[f"{ip[6]}-{ip[7]}"] + b[f"{ip[7]}-{ip[8]}"] + b[f"{ip[8]}-{ip[9]}"] +\
-        b[f"{ip[9]}-{ip[10]}"] + b[f"{ip[10]}-{ip[11]}"] + b[f"{ip[11]}-{ip[12]}"] +\
-        b[f"{ip[12]}-{ip[13]}"] + b[f"{ip[13]}-{ip[14]}"] + b[f"{ip[14]}-{ip[15]}"] +\
-        b[f"{ip[15]}-{ip[16]}"] + b[f"{ip[16]}-{ip[17]}"] + b[f"{ip[17]}-{ip[18]}"] +\
-        b[f"{ip[18]}-{ip[19]}"] + b[f"{ip[19]}-{ip[20]}"] + b[f"{ip[20]}-{ip[21]}"] +\
-        b[f"{ip[21]}-{ip[22]}"] + b[f"{ip[22]}-{ip[23]}"] + b[f"{ip[23]}-{ip[24]}"] +\
-        b[f"{ip[24]}-{ip[25]}"] + b[f"{ip[25]}-{ip[26]}"] + b[f"{ip[26]}-{ip[27]}"] +\
-        b[f"{ip[27]}-{ip[28]}"] + b[f"{ip[28]}-{ip[29]}"] + b[f"{ip[29]}-{ip[30]}"] +\
-        b[f"{ip[30]}-{ip[31]}"] + b[f"{ip[31]}-{ip[32]}"]
+        distance = b[bytes((ip[0],ip[1]))] + b[bytes((ip[1],ip[2]))] + b[bytes((ip[2],ip[3]))] +\
+        b[bytes((ip[3],ip[4]))] + b[bytes((ip[4],ip[5]))] + b[bytes((ip[5],ip[6]))] +\
+        b[bytes((ip[6],ip[7]))] + b[bytes((ip[7],ip[8]))] + b[bytes((ip[8],ip[9]))] +\
+        b[bytes((ip[9],ip[10]))] + b[bytes((ip[10],ip[11]))] + b[bytes((ip[11],ip[12]))] +\
+        b[bytes((ip[12],ip[13]))] + b[bytes((ip[13],ip[14]))] + b[bytes((ip[14],ip[15]))] +\
+        b[bytes((ip[15],ip[16]))] + b[bytes((ip[16],ip[17]))] + b[bytes((ip[17],ip[18]))] +\
+        b[bytes((ip[18],ip[19]))] + b[bytes((ip[19],ip[20]))] + b[bytes((ip[20],ip[21]))] +\
+        b[bytes((ip[21],ip[22]))] + b[bytes((ip[22],ip[23]))] + b[bytes((ip[23],ip[24]))] +\
+        b[bytes((ip[24],ip[25]))] + b[bytes((ip[25],ip[26]))] + b[bytes((ip[26],ip[27]))] +\
+        b[bytes((ip[27],ip[28]))] + b[bytes((ip[28],ip[29]))] + b[bytes((ip[29],ip[30]))] +\
+        b[bytes((ip[30],ip[31]))] + b[bytes((ip[31],ip[32]))]
     
         if distance < lowest_distance:
-            lowest_distance = distance
-            print("[{:,}] New lowest distance found... it's {:,.2f} ly".format(x, lowest_distance))
-    
+            lowest_distance = distance    
     
         if y == 500:
             print ("Checkpoint {:,} / {:,}".format(x, STEPS))
-            # print("Memory Check : {} bytes".format(gc.mem_free()))
-            # gc.collect()
             y = 0
         
         y += 1           
         ip = next_lexicographic_permutation(ip)
     
-    # print("Post run memory amount : {} bytes".format(gc.mem_free()))
     finish = time.time()
     diff = finish - start
     print("Time Taken for a run of {:,.0f} iterations : {} seconds".format(STEPS, diff))
@@ -159,6 +160,10 @@ while True:
     final['iteration'] = iteration
     final = json.dumps(final)
     req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
+    break
+
+
+
 
 
 
