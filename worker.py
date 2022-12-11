@@ -120,13 +120,13 @@ version = "P.0.1.4"
 
 # ip = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 22, 29, 28, 21, 31, 30, 27, 23, 24, 32, 19, 25, 26, 20, 18]
 
-b = {}
+b = [[0 for i in range(33)] for j in range(33)]
 for x in range(33):
   for y in range(33):
     if x == y: 
       continue 
     else:
-      b[hash((x,y))] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
+      b[x][y] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
 
 
 
@@ -150,17 +150,17 @@ while True:
   print("Working on unit : {:,.0f}".format(iteration))
 
   for x in range(1,10_000_000):   
-    distance = b[hash((ip[0],ip[1]))] + b[hash((ip[1],ip[2]))] + b[hash((ip[2],ip[3]))] +\
-        b[hash((ip[3],ip[4]))] + b[hash((ip[4],ip[5]))] + b[hash((ip[5],ip[6]))] +\
-        b[hash((ip[6],ip[7]))] + b[hash((ip[7],ip[8]))] + b[hash((ip[8],ip[9]))] +\
-        b[hash((ip[9],ip[10]))] + b[hash((ip[10],ip[11]))] + b[hash((ip[11],ip[12]))] +\
-        b[hash((ip[12],ip[13]))] + b[hash((ip[13],ip[14]))] + b[hash((ip[14],ip[15]))] +\
-        b[hash((ip[15],ip[16]))] + b[hash((ip[16],ip[17]))] + b[hash((ip[17],ip[18]))] +\
-        b[hash((ip[18],ip[19]))] + b[hash((ip[19],ip[20]))] + b[hash((ip[20],ip[21]))] +\
-        b[hash((ip[21],ip[22]))] + b[hash((ip[22],ip[23]))] + b[hash((ip[23],ip[24]))] +\
-        b[hash((ip[24],ip[25]))] + b[hash((ip[25],ip[26]))] + b[hash((ip[26],ip[27]))] +\
-        b[hash((ip[27],ip[28]))] + b[hash((ip[28],ip[29]))] + b[hash((ip[29],ip[30]))] +\
-        b[hash((ip[30],ip[31]))] + b[hash((ip[31],ip[32]))]
+    distance = b[ip[0]][ip[1]] + b[ip[1]][ip[2]] + b[ip[2]][ip[3]] +\
+    b[ip[3]][ip[4]] + b[ip[4]][ip[5]] + b[ip[5]][ip[6]] +\
+    b[ip[6]][ip[7]] + b[ip[7]][ip[8]] + b[ip[8]][ip[9]] +\
+    b[ip[9]][ip[10]] + b[ip[10]][ip[11]] + b[ip[11]][ip[12]] +\
+    b[ip[12]][ip[13]] + b[ip[13]][ip[14]] + b[ip[14]][ip[15]] +\
+    b[ip[15]][ip[16]] + b[ip[16]][ip[17]] + b[ip[17]][ip[18]] +\
+    b[ip[18]][ip[19]] + b[ip[19]][ip[20]] + b[ip[20]][ip[21]] +\
+    b[ip[21]][ip[22]] + b[ip[22]][ip[23]] + b[ip[23]][ip[24]] +\
+    b[ip[24]][ip[25]] + b[ip[25]][ip[26]] + b[ip[26]][ip[27]] +\
+    b[ip[27]][ip[28]] + b[ip[28]][ip[29]] + b[ip[29]][ip[30]] +\
+    b[ip[30]][ip[31]] + b[ip[31]][ip[32]]
     
     if distance < lowest_total:
       lowest_total = distance
