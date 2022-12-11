@@ -104,7 +104,7 @@ for x in range(33):
       continue 
     else:
       b["{}-{}".format(x, y)] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
-
+      
 while True:
     data = json.loads(requests.get(get_url).text)
     STEPS = 100_000
