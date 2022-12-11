@@ -158,9 +158,21 @@ while True:
       output_things(x, lowest_total, iteration)
       y = 0
     
-    distance = 0
-    for r in range(32):
-      distance += b[hash((ip[r], ip[r+1]))]
+    # distance = 0
+    # for r in range(32):
+    #   distance += b[hash((ip[r], ip[r+1]))]
+    
+    distance = b[hash((ip[0],ip[1]))] + b[hash((ip[1],ip[2]))] + b[hash((ip[2],ip[3]))] +\
+        b[hash((ip[3],ip[4]))] + b[hash((ip[4],ip[5]))] + b[hash((ip[5],ip[6]))] +\
+        b[hash((ip[6],ip[7]))] + b[hash((ip[7],ip[8]))] + b[hash((ip[8],ip[9]))] +\
+        b[hash((ip[9],ip[10]))] + b[hash((ip[10],ip[11]))] + b[hash((ip[11],ip[12]))] +\
+        b[hash((ip[12],ip[13]))] + b[hash((ip[13],ip[14]))] + b[hash((ip[14],ip[15]))] +\
+        b[hash((ip[15],ip[16]))] + b[hash((ip[16],ip[17]))] + b[hash((ip[17],ip[18]))] +\
+        b[hash((ip[18],ip[19]))] + b[hash((ip[19],ip[20]))] + b[hash((ip[20],ip[21]))] +\
+        b[hash((ip[21],ip[22]))] + b[hash((ip[22],ip[23]))] + b[hash((ip[23],ip[24]))] +\
+        b[hash((ip[24],ip[25]))] + b[hash((ip[25],ip[26]))] + b[hash((ip[26],ip[27]))] +\
+        b[hash((ip[27],ip[28]))] + b[hash((ip[28],ip[29]))] + b[hash((ip[29],ip[30]))] +\
+        b[hash((ip[30],ip[31]))] + b[hash((ip[31],ip[32]))]
     
     if distance < lowest_total:
       lowest_total = distance
@@ -173,17 +185,17 @@ while True:
   # print("[{}] Finish".format(finish_date))
   diff = finish - start
 
-  # print("Time taken => {}".format(diff))
-  # print("Lowest distance => {}".format(lowest_total))
-  # print("Lowest permutation => {} ".format(str(lowest_perm).replace(" ", "")))
-
-  final = {}
-  final['distance'] = lowest_total
-  final['identifier'] = identifier
-  final['perm'] = lowest_perm
-  final['duration'] = str(diff)
-  final['finished_at'] = finish_date
-  final['version'] = version
-  final = json.dumps(final)
-  send_work_unit(final)
+  print("Time taken => {}".format(diff))
+  print("Lowest distance => {}".format(lowest_total))
+  print("Lowest permutation => {} ".format(str(lowest_perm).replace(" ", "")))
+  break
+  # final = {}
+  # final['distance'] = lowest_total
+  # final['identifier'] = identifier
+  # final['perm'] = lowest_perm
+  # final['duration'] = str(diff)
+  # final['finished_at'] = finish_date
+  # final['version'] = version
+  # final = json.dumps(final)
+  # send_work_unit(final)
   # sleep(2)
