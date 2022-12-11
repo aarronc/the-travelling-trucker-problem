@@ -226,11 +226,14 @@ fn main() {
         // star_system_distances.insert(pair_key, distance);
     }
 
-    println!("Total system count: {}", star_systems.keys().len());
+    let star_system_count = star_systems.keys().len();
+    println!("Total system count: {}", star_system_count);
 
     // We use a u32 for the lookup. This must always be done via shifting the highest
     // route index by 16 and bitwise andind with the lower index
     let mut star_system_distances: HashMap<u32, f32> = HashMap::new();
+    let mut star_system_distances_2d: Vec<Vec<f32>> =
+        vec![vec![0.0; star_system_count]; star_system_count];
 
     for (source_key, dest_key) in star_system_keys.iter().tuple_combinations() {
         let sss = &star_systems[source_key];
@@ -240,6 +243,9 @@ fn main() {
         let source_pos = cgmath::vec3(sss.x, sss.y, sss.z);
         let dest_pos = cgmath::vec3(dss.x, dss.y, dss.z);
         let distance = source_pos.distance(dest_pos);
+
+        star_system_distances_2d[**source_key as usize][**dest_key as usize] = distance;
+        star_system_distances_2d[**dest_key as usize][**source_key as usize] = distance;
 
         // Fold the source and dest into a single u32 by forcing each to be a 16bit uint
         // which means we can only ever have a max of 65535 systems, which is probably ok
@@ -295,7 +301,13 @@ fn main() {
 
         // Calculate the total distance via route_distance(), utilising our distance_cache
 
-        let route_dist = route_distance(&mutable_system_indices, &star_system_distances);
+        // HASH LOOKUP
+        // let route_dist = route_distance(&mutable_system_indices, &star_system_distances);
+
+        // 2D VEC LOOKUP
+        let route_dist =
+            route_distance_2d_array(&mutable_system_indices, &star_system_distances_2d);
+
         // println!("Checking {} vs existing {}", route_dist, best_route);
         // If it's better, make a note of it
         if route_dist < best_route_distance {
@@ -341,6 +353,21 @@ fn route_distance(input: &[u32], distance_cache: &HashMap<u32, f32>) -> f32 {
             dest << 16 | source
         };
         let distance: f32 = distance_cache[&compound_key];
+        // println!("{} -> {} = {}", source, dest, distance);
+        total_distance += distance;
+    }
+
+    return total_distance;
+}
+
+fn route_distance_2d_array(input: &[u32], distance_cache: &Vec<Vec<f32>>) -> f32 {
+    let mut total_distance = 0.0;
+    let route_visit_count = input.len();
+
+    for idx in 1..route_visit_count {
+        let source = input[idx - 1] as usize;
+        let dest = input[idx] as usize;
+        let distance: f32 = distance_cache[source][dest];
         // println!("{} -> {} = {}", source, dest, distance);
         total_distance += distance;
     }
