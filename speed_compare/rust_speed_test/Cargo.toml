@@ -1,0 +1,15 @@
+[package]
+name = "rust_speed_test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.104", features = ["derive"] }
+serde_json = "1.0"
+itertools = "0.8"
+cgmath = "0.18.0"
+rayon = "1.5"
+rand = "0.8.5"
+thousands = "0.2.0"
