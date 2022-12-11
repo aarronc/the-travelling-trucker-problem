@@ -123,10 +123,5 @@ print("[{}] Finish".format(finish_date))
 diff = finish - start
 print("last perm => {}".format(ip))
 print("Time taken => {}".format(diff))
-<<<<<<< Updated upstream
 print("Lowest distance => {}".format(lowest_total))
-=======
-print("Lowest distance => {}".format(lowest_total))
-print("Lowest permutation => {} ".format(lowest_total))
 print(lowest_ip)
->>>>>>> Stashed changes
