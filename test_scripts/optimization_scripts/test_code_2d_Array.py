@@ -107,6 +107,7 @@ for x in range(10_000_000):
     b[ip[30]][ip[31]] + b[ip[31]][ip[32]]
   if distance < lowest_total:
     lowest_total = distance
+    lowest_ip = ip
     
   if y == 1_000_000:
     print("[{}] Checkpoint {:,.0f} / 10,000,000".format(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), x))
@@ -120,6 +121,12 @@ finish_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 finish = datetime.datetime.now()
 print("[{}] Finish".format(finish_date))
 diff = finish - start
-
+print("last perm => {}".format(ip))
 print("Time taken => {}".format(diff))
+<<<<<<< Updated upstream
 print("Lowest distance => {}".format(lowest_total))
+=======
+print("Lowest distance => {}".format(lowest_total))
+print("Lowest permutation => {} ".format(lowest_total))
+print(lowest_ip)
+>>>>>>> Stashed changes
