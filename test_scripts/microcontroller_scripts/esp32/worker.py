@@ -54,12 +54,12 @@ def do_connect():
     if not sta_if.isconnected():
         print('connecting to network...')
         sta_if.active(True)
-        sta_if.connect('ssid', 'password')
+        sta_if.connect('<SSID>', '<APSSWORD>')
         while not sta_if.isconnected():
             pass
     print('network config:', sta_if.ifconfig())   
 
-print("Pre dict creation memory amount : {} bytes".format(gc.mem_free()))
+print("Pre dict creation memory amount : {} hash(bytes".format(gc.mem_free()))
 
 lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125},\
           "1":{"name":"Wolf 124","x":-7.25,"y":-27.1562,"z":-19.0938},\
@@ -103,17 +103,18 @@ do_connect() # Connect to network
 
 gc.collect()
 b = {}
+b = [[0 for i in range(33)] for j in range(33)]
 for x in range(33):
   gc.collect()
   for y in range(33):
     if x == y: 
       continue 
     else:
-      b[bytes((x, y))] = math.sqrt(((lookup[str(x)]['x'] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
+      b[x][y] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
       
 while True:
     data = json.loads((requests.get(get_url).text))
-    STEPS = 100_000
+    STEPS = 1_000_000
     lowest_distance = 9999
     # ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
     ip = data['perm']
@@ -125,18 +126,18 @@ while True:
     y = 0
     print("Tiny Unit : {}".format(tiny_uuid))
     for x in range(STEPS):
-        distance = b[bytes((ip[0],ip[1]))] + b[bytes((ip[1],ip[2]))] + b[bytes((ip[2],ip[3]))] +\
-        b[bytes((ip[3],ip[4]))] + b[bytes((ip[4],ip[5]))] + b[bytes((ip[5],ip[6]))] +\
-        b[bytes((ip[6],ip[7]))] + b[bytes((ip[7],ip[8]))] + b[bytes((ip[8],ip[9]))] +\
-        b[bytes((ip[9],ip[10]))] + b[bytes((ip[10],ip[11]))] + b[bytes((ip[11],ip[12]))] +\
-        b[bytes((ip[12],ip[13]))] + b[bytes((ip[13],ip[14]))] + b[bytes((ip[14],ip[15]))] +\
-        b[bytes((ip[15],ip[16]))] + b[bytes((ip[16],ip[17]))] + b[bytes((ip[17],ip[18]))] +\
-        b[bytes((ip[18],ip[19]))] + b[bytes((ip[19],ip[20]))] + b[bytes((ip[20],ip[21]))] +\
-        b[bytes((ip[21],ip[22]))] + b[bytes((ip[22],ip[23]))] + b[bytes((ip[23],ip[24]))] +\
-        b[bytes((ip[24],ip[25]))] + b[bytes((ip[25],ip[26]))] + b[bytes((ip[26],ip[27]))] +\
-        b[bytes((ip[27],ip[28]))] + b[bytes((ip[28],ip[29]))] + b[bytes((ip[29],ip[30]))] +\
-        b[bytes((ip[30],ip[31]))] + b[bytes((ip[31],ip[32]))]
-    
+        distance = b[ip[0]][ip[1]] + b[ip[1]][ip[2]] + b[ip[2]][ip[3]] +\
+          b[ip[3]][ip[4]] + b[ip[4]][ip[5]] + b[ip[5]][ip[6]] +\
+          b[ip[6]][ip[7]] + b[ip[7]][ip[8]] + b[ip[8]][ip[9]] +\
+          b[ip[9]][ip[10]] + b[ip[10]][ip[11]] + b[ip[11]][ip[12]] +\
+          b[ip[12]][ip[13]] + b[ip[13]][ip[14]] + b[ip[14]][ip[15]] +\
+          b[ip[15]][ip[16]] + b[ip[16]][ip[17]] + b[ip[17]][ip[18]] +\
+          b[ip[18]][ip[19]] + b[ip[19]][ip[20]] + b[ip[20]][ip[21]] +\
+          b[ip[21]][ip[22]] + b[ip[22]][ip[23]] + b[ip[23]][ip[24]] +\
+          b[ip[24]][ip[25]] + b[ip[25]][ip[26]] + b[ip[26]][ip[27]] +\
+          b[ip[27]][ip[28]] + b[ip[28]][ip[29]] + b[ip[29]][ip[30]] +\
+          b[ip[30]][ip[31]] + b[ip[31]][ip[32]]
+          
         if distance < lowest_distance:
             lowest_distance = distance    
     
@@ -161,11 +162,3 @@ while True:
     final = json.dumps(final)
     req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
     break
-
-
-
-
-
-
-
-
