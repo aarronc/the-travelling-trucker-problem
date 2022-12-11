@@ -86,9 +86,13 @@ for x in range(33):
       b[f"{x}-{y}"] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
 
 # begin timer
+start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 start = datetime.datetime.now()
 
+print("[{}] Start".format(start_date))
+
 # main iteration loop
+y = 0
 for x in range(10_000_000):
   distance = b[f"{ip[0]}-{ip[1]}"] + b[f"{ip[1]}-{ip[2]}"] + b[f"{ip[2]}-{ip[3]}"] +\
     b[f"{ip[3]}-{ip[4]}"] + b[f"{ip[4]}-{ip[5]}"] + b[f"{ip[5]}-{ip[6]}"] +\
@@ -103,10 +107,20 @@ for x in range(10_000_000):
     b[f"{ip[30]}-{ip[31]}"] + b[f"{ip[31]}-{ip[32]}"]
   if distance < lowest_total:
     lowest_total = distance
+    
+  if y == 1_000_000:
+    print("[{}] Checkpoint {:,.0f} / 10,000,000".format(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), x))
+    y = 0
+    
+  y += 1
   
   ip = next_lexicographic_permutation(ip)
 # end timer
+finish_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 finish = datetime.datetime.now()
+print("[{}] Finish".format(finish_date))
+diff = finish - start
 
-print(f"Time Elapsed => {finish - start}")
-print(f"lowest total => {lowest_total}")
+print("Time taken => {}".format(diff))
+print("Lowest distance => {}".format(lowest_total))
+print("Lowest permutation => {} ".format(lowest_perm))
