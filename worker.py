@@ -116,15 +116,15 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
   "31":{"name":"Avik","x":13.9688,"y":-4.59375,"z":-6.0},\
   "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
-version = "P.0.0.6"
+version = "P.0.1.4"
 
 # ip = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 22, 29, 28, 21, 31, 30, 27, 23, 24, 32, 19, 25, 26, 20, 18]
 
 b = {}
 for x in range(33):
   for y in range(33):
-    if x == y: #no need to int an int, could reverse the logic so only do if not equal to each other and no else
-      continue # this skips current itteration which is what i think you wanted to do
+    if x == y: 
+      continue 
     else:
       b[hash((x,y))] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
 
@@ -148,20 +148,8 @@ while True:
   
   print("Truckers@Home")
   print("Working on unit : {:,.0f}".format(iteration))
-  print("[{}] Checkpoint {:,.0f} / 10".format(datetime.datetime.now().strftime("%H:%M:%S"), 0))
 
-  y = 0
-  z = 0
-  for x in range(1,10_000_000):
-    y += 1
-    if y == 1_000_000:
-      output_things(x, lowest_total, iteration)
-      y = 0
-    
-    # distance = 0
-    # for r in range(32):
-    #   distance += b[hash((ip[r], ip[r+1]))]
-    
+  for x in range(1,10_000_000):   
     distance = b[hash((ip[0],ip[1]))] + b[hash((ip[1],ip[2]))] + b[hash((ip[2],ip[3]))] +\
         b[hash((ip[3],ip[4]))] + b[hash((ip[4],ip[5]))] + b[hash((ip[5],ip[6]))] +\
         b[hash((ip[6],ip[7]))] + b[hash((ip[7],ip[8]))] + b[hash((ip[8],ip[9]))] +\
@@ -180,22 +168,20 @@ while True:
       
     ip = next_lexicographic_permutation(ip)
 
-  finish_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   finish = datetime.datetime.now()
-  # print("[{}] Finish".format(finish_date))
+  finish_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+  
   diff = finish - start
-
-  print("Time taken => {}".format(diff))
-  print("Lowest distance => {}".format(lowest_total))
-  print("Lowest permutation => {} ".format(str(lowest_perm).replace(" ", "")))
-  break
-  # final = {}
-  # final['distance'] = lowest_total
-  # final['identifier'] = identifier
-  # final['perm'] = lowest_perm
-  # final['duration'] = str(diff)
-  # final['finished_at'] = finish_date
-  # final['version'] = version
-  # final = json.dumps(final)
-  # send_work_unit(final)
-  # sleep(2)
+  # print("Time taken => {}".format(diff))
+  # print("Lowest distance => {}".format(lowest_total))
+  # print("Lowest permutation => {} ".format(str(lowest_perm).replace(" ", "")))
+  final = {}
+  final['distance'] = lowest_total
+  final['identifier'] = identifier
+  final['perm'] = lowest_perm
+  final['duration'] = str(diff)
+  final['finished_at'] = finish_date
+  final['version'] = version
+  final = json.dumps(final)
+  send_work_unit(final)
+  
