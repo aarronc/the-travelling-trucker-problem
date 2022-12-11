@@ -123,4 +123,4 @@ diff = finish - start
 
 print("Time taken => {}".format(diff))
 print("Lowest distance => {}".format(lowest_total))
-print("Lowest permutation => {} ".format(lowest_perm))
+print("Lowest permutation => {} ".format(lowest_total))
