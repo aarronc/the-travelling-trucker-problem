@@ -1,11 +1,14 @@
 use cgmath::MetricSpace;
 use itertools::Itertools;
+use permutator::{Combination, XPermutationIterator};
 use rand::seq::SliceRandom;
-use rayon::prelude::*; // for multi-core
+use rayon::prelude::*; // for multi-core?
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap; // 0.6.5
 use std::time::Instant;
 use thousands::Separable;
+
+// This is my first ever Rust program, so I'm definitely not writing good idiomatic Rust
 
 fn main() {
     let start = Instant::now();
@@ -282,22 +285,40 @@ fn main() {
     // move the best route down from floatmax
     let mut best_route_distance = std::f32::MAX;
     let mut best_route: Vec<u32> = Vec::new();
+    let mut last_route: Vec<u32> = Vec::new();
 
     // We need to deref the keys in this map with * as we originally got pointers from the original parsed JSON
     let mut mutable_system_indices = star_system_keys.into_iter().map(|x| *x).collect_vec();
+
+    // Permutation system
+    let mut perm_iter = XPermutationIterator::new(&mutable_system_indices, |_| true);
 
     // Initialise an RNG for the shuffles
     let mut rng = rand::thread_rng();
 
     // Define how many loops we want in total
-    let loop_count = 5000000;
+    let loop_count = 10000000;
 
     println!("Looping for {}", loop_count.separate_with_commas());
 
     // The business end
-    for route_loop in 1..loop_count {
+    for route_loop in 0..loop_count {
         // Shuffle to get a random walk
-        mutable_system_indices.shuffle(&mut rng);
+        // mutable_system_indices.shuffle(&mut rng);
+
+        if let Some(next_route) = perm_iter.next() {
+            let route_dist = route_distance_vec_2d_array(&next_route, &star_system_distances_2d);
+
+            if route_dist < best_route_distance {
+                best_route_distance = route_dist;
+                best_route = mutable_system_indices.clone();
+            }
+
+            // Just grab the last route on the last iteration
+            if route_loop == loop_count - 1 {
+                last_route = next_route.into_iter().map(|x| *x).collect_vec();
+            }
+        }
 
         // Calculate the total distance via route_distance(), utilising our distance_cache
 
@@ -305,15 +326,15 @@ fn main() {
         // let route_dist = route_distance(&mutable_system_indices, &star_system_distances);
 
         // 2D VEC LOOKUP
-        let route_dist =
-            route_distance_2d_array(&mutable_system_indices, &star_system_distances_2d);
+        // let route_dist =
+        //     route_distance_2d_array(&mutable_system_indices, &star_system_distances_2d);
 
         // println!("Checking {} vs existing {}", route_dist, best_route);
         // If it's better, make a note of it
-        if route_dist < best_route_distance {
-            best_route_distance = route_dist;
-            best_route = mutable_system_indices.clone();
-        }
+        // if route_dist < best_route_distance {
+        //     best_route_distance = route_dist;
+        //     best_route = mutable_system_indices.clone();
+        // }
     }
 
     let duration = start.elapsed();
@@ -321,7 +342,9 @@ fn main() {
         "Shortest route found with total distance of {} via indices {:?}",
         best_route_distance, best_route
     );
+    println!("Last route has indices {:?}", last_route);
 
+    println!("Best route:");
     for idx in 1..best_route.len() {
         let source = best_route[idx - 1];
         let dest = best_route[idx];
@@ -367,6 +390,22 @@ fn route_distance_2d_array(input: &[u32], distance_cache: &Vec<Vec<f32>>) -> f32
     for idx in 1..route_visit_count {
         let source = input[idx - 1] as usize;
         let dest = input[idx] as usize;
+        let distance: f32 = distance_cache[source][dest];
+        // println!("{} -> {} = {}", source, dest, distance);
+        total_distance += distance;
+    }
+
+    return total_distance;
+}
+
+// Hacked up a different method to take a vec rather than an array
+fn route_distance_vec_2d_array(input: &Vec<&u32>, distance_cache: &Vec<Vec<f32>>) -> f32 {
+    let mut total_distance = 0.0;
+    let route_visit_count = input.len();
+
+    for idx in 1..route_visit_count {
+        let source = *input[idx - 1] as usize;
+        let dest = *input[idx] as usize;
         let distance: f32 = distance_cache[source][dest];
         // println!("{} -> {} = {}", source, dest, distance);
         total_distance += distance;
