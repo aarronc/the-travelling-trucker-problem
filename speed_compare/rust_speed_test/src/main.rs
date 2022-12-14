@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::env;
+use std::f32::consts::E;
 use std::time::Instant;
 use thousands::Separable;
 
@@ -193,10 +194,10 @@ fn main() {
         overall_best_route_distance, overall_best_route
     );
     println!(
-        "Completed {} iterations in {} simulations {:?} ({} iter/sec)",
+        "Completed {} iterations in {} simulations that took {:.1}s ({} iter/sec)",
         total_iterations.separate_with_commas(),
         simulation_run_count,
-        duration,
+        duration.as_secs(),
         ((simulation_run_count as f64 * last_simulation_iteration_count as f64
             / duration.as_secs() as f64) as i64)
             .separate_with_commas()
@@ -261,10 +262,12 @@ fn run_simulation(
 
             let new_route_distance = route_distance_2d_array(&new_route, distance_cache);
 
-            let args = (best_route_distance - new_route_distance) / temperature;
-            let accept_probability = f64::exp(args.into());
-            let random_value: f64 = rng.gen();
-            if random_value < accept_probability {
+            let exponent_args = (best_route_distance - new_route_distance) / temperature;
+
+            let accept_probability_f32 = E.powf(exponent_args);
+            // let accept_probability = f64::exp(exponent_args.into());
+            let random_value: f32 = rng.gen();
+            if random_value < accept_probability_f32 {
                 // println!(
                 //     "New best route dist {} vs {} was from swapped indices {} and {}: {:?}",
                 //     shortest_route, best_route_distance, start, end, star_system_indices_swapped
