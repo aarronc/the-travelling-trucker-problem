@@ -1,19 +1,32 @@
+use cgmath::num_traits::ToPrimitive;
 use cgmath::MetricSpace;
 use itertools::Itertools;
 use permutator::{Combination, XPermutationIterator};
+use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
+use rand::Rng;
 use rayon::prelude::*; // for multi-core?
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap; // 0.6.5
+use std::collections::HashMap;
+// 0.6.5
 use std::time::Instant;
 use thousands::Separable;
 
 // This is my first ever Rust program, so I'm definitely not writing good idiomatic Rust
 
+struct Candidate {
+    route: Vec<usize>,
+}
+
 fn main() {
     let start = Instant::now();
 
     println!("Hello, world!");
+
+    let best_route = [
+        12, 15, 28, 5, 25, 21, 22, 29, 26, 0, 27, 17, 31, 30, 20, 19, 16, 14, 8, 9, 4, 2, 23, 6,
+        24, 32, 3, 7, 13, 11, 1, 10, 18,
+    ];
 
     let json_string = r#"
     {
@@ -232,9 +245,7 @@ fn main() {
     let star_system_count = star_systems.keys().len();
     println!("Total system count: {}", star_system_count);
 
-    // We use a u32 for the lookup. This must always be done via shifting the highest
-    // route index by 16 and bitwise andind with the lower index
-    let mut star_system_distances: HashMap<u32, f32> = HashMap::new();
+    // 2d array of cached distances
     let mut star_system_distances_2d: Vec<Vec<f32>> =
         vec![vec![0.0; star_system_count]; star_system_count];
 
@@ -249,147 +260,132 @@ fn main() {
 
         star_system_distances_2d[**source_key as usize][**dest_key as usize] = distance;
         star_system_distances_2d[**dest_key as usize][**source_key as usize] = distance;
-
-        // Fold the source and dest into a single u32 by forcing each to be a 16bit uint
-        // which means we can only ever have a max of 65535 systems, which is probably ok
-        let source_key_int: u32 = **source_key;
-        let dest_key_int: u32 = **dest_key;
-        let compound_key = dest_key_int << 16 | source_key_int;
-
-        // Debug checking
-        // println!("{} -> {}", source_key_int, dest_key_int);
-        // println!("source = {:#034b}", source_key);
-        // println!("dest = {:#034b}", dest_key);
-        // println!("compound = {:#034b}", compound_key);
-        // println!("------");
-
-        // Extract to double check I've got this right
-        // let lower_mask: u32 = 65535;
-        // let derived_source = compound_key & lower_mask;
-        // let derived_dest = (compound_key >> 16) & lower_mask;
-        // println!("derived {} -> {}", derived_source, derived_dest);
-        // println!("--!!--");
-
-        star_system_distances.insert(compound_key, distance);
     }
 
     println!(
         "Constructed distance cache with {} entries",
-        star_system_distances.keys().len()
+        star_system_distances_2d.len() * star_system_distances_2d.len()
     );
 
     // for (key, value) in star_systems.into_iter() {
     //     println!("Index: {}, star system: {:?}", key, value);
     // }
 
+    println!(
+        "Best route from JS: {}",
+        route_distance_2d_array(&best_route, &star_system_distances_2d)
+    );
+
     // move the best route down from floatmax
     let mut best_route_distance = std::f32::MAX;
-    let mut best_route: Vec<u32> = Vec::new();
-    let mut last_route: Vec<u32> = Vec::new();
+    let mut best_route: Vec<usize> = Vec::new();
 
     // We need to deref the keys in this map with * as we originally got pointers from the original parsed JSON
-    let mut mutable_system_indices = star_system_keys.into_iter().map(|x| *x).collect_vec();
+    let mut current_route: Vec<usize> = star_system_keys
+        .into_iter()
+        .map(|x| usize::try_from(*x).unwrap())
+        .collect_vec();
 
     // Permutation system
-    let mut perm_iter = XPermutationIterator::new(&mutable_system_indices, |_| true);
+    // let mut perm_iter = XPermutationIterator::new(&mutable_system_indices, |_| true);
 
     // Initialise an RNG for the shuffles
     let mut rng = rand::thread_rng();
 
-    // Define how many loops we want in total
-    let loop_count = 10000000;
+    // shuffle once, to allow us to re-run the binary with a randomised outcome each time
+    current_route.shuffle(&mut rng);
 
-    println!("Looping for {}", loop_count.separate_with_commas());
+    let mut same_count = 0;
+
+    let cooling_ratio = 0.998;
+    let mut temperature = 700.0;
+    let mut loop_count = 0;
+    let iterations_at_temperature = 2000;
+
+    let printed_temperature_band_size = 20.0;
+
+    let mut last_printed_temperature = temperature;
 
     // The business end
-    for route_loop in 0..loop_count {
-        // Shuffle to get a random walk
-        // mutable_system_indices.shuffle(&mut rng);
+    while temperature >= 1.0 {
+        for n in 0..iterations_at_temperature {
+            // Pick a random pair of indices, start lower than end
+            let start = rng.gen::<usize>() % current_route.len();
+            let end = rng.gen::<usize>() % current_route.len();
+            let (start, end) = if start < end {
+                (start, end)
+            } else {
+                (end, start)
+            };
 
-        if let Some(next_route) = perm_iter.next() {
-            let route_dist = route_distance_vec_2d_array(&next_route, &star_system_distances_2d);
+            // println!("Swapping {} and {}", start, end);
 
-            if route_dist < best_route_distance {
-                best_route_distance = route_dist;
-                best_route = mutable_system_indices.clone();
+            // Make a trivial pair swap for the first route variant
+            let mut new_route = current_route.clone();
+            new_route.swap(start, end);
+
+            let new_route_distance = route_distance_2d_array(&new_route, &star_system_distances_2d);
+
+            let args = ((best_route_distance - new_route_distance) / temperature);
+            let accept_probability = f64::exp(args.into());
+            let random_value: f64 = rng.gen();
+            if (random_value < accept_probability) {
+                // println!(
+                //     "New best route dist {} vs {} was from swapped indices {} and {}: {:?}",
+                //     shortest_route, best_route_distance, start, end, star_system_indices_swapped
+                // );
+                current_route = new_route.clone();
             }
 
-            // Just grab the last route on the last iteration
-            if route_loop == loop_count - 1 {
-                last_route = next_route.into_iter().map(|x| *x).collect_vec();
+            if new_route_distance < best_route_distance {
+                best_route_distance = new_route_distance;
+                best_route = new_route.clone();
             }
         }
 
-        // Calculate the total distance via route_distance(), utilising our distance_cache
+        if (temperature < (last_printed_temperature - printed_temperature_band_size)) {
+            println!(
+                "Temperature: {:.0} ({} loops) - Current best route distance {:.1}",
+                temperature, loop_count, best_route_distance
+            );
+            last_printed_temperature = temperature;
+        }
 
-        // HASH LOOKUP
-        // let route_dist = route_distance(&mutable_system_indices, &star_system_distances);
-
-        // 2D VEC LOOKUP
-        // let route_dist =
-        //     route_distance_2d_array(&mutable_system_indices, &star_system_distances_2d);
-
-        // println!("Checking {} vs existing {}", route_dist, best_route);
-        // If it's better, make a note of it
-        // if route_dist < best_route_distance {
-        //     best_route_distance = route_dist;
-        //     best_route = mutable_system_indices.clone();
-        // }
+        loop_count += iterations_at_temperature;
+        temperature *= cooling_ratio;
     }
 
     let duration = start.elapsed();
+    // println!("Best route:");
+    // for idx in 1..best_route.len() {
+    //     let source = best_route[idx - 1] as u32;
+    //     let dest = best_route[idx] as u32;
+
+    //     println!(
+    //         "{} -> {}",
+    //         star_systems[&source].name, star_systems[&dest].name
+    //     );
+    // }
+
     println!(
         "Shortest route found with total distance of {} via indices {:?}",
         best_route_distance, best_route
     );
-    println!("Last route has indices {:?}", last_route);
-
-    println!("Best route:");
-    for idx in 1..best_route.len() {
-        let source = best_route[idx - 1];
-        let dest = best_route[idx];
-
-        println!(
-            "{} -> {}",
-            star_systems[&source].name, star_systems[&dest].name
-        );
-    }
-
     println!(
         "completed {} iterations in {:?} ({:?}/iter)",
         loop_count.separate_with_commas(),
         duration,
-        duration / loop_count
+        duration / loop_count as u32
     );
 }
 
-fn route_distance(input: &[u32], distance_cache: &HashMap<u32, f32>) -> f32 {
+fn route_distance_2d_array(input: &[usize], distance_cache: &Vec<Vec<f32>>) -> f32 {
     let mut total_distance = 0.0;
     let route_visit_count = input.len();
 
     for idx in 1..route_visit_count {
         let source = input[idx - 1];
         let dest = input[idx];
-        let compound_key = if source > dest {
-            source << 16 | dest
-        } else {
-            dest << 16 | source
-        };
-        let distance: f32 = distance_cache[&compound_key];
-        // println!("{} -> {} = {}", source, dest, distance);
-        total_distance += distance;
-    }
-
-    return total_distance;
-}
-
-fn route_distance_2d_array(input: &[u32], distance_cache: &Vec<Vec<f32>>) -> f32 {
-    let mut total_distance = 0.0;
-    let route_visit_count = input.len();
-
-    for idx in 1..route_visit_count {
-        let source = input[idx - 1] as usize;
-        let dest = input[idx] as usize;
         let distance: f32 = distance_cache[source][dest];
         // println!("{} -> {} = {}", source, dest, distance);
         total_distance += distance;
@@ -412,6 +408,32 @@ fn route_distance_vec_2d_array(input: &Vec<&u32>, distance_cache: &Vec<Vec<f32>>
     }
 
     return total_distance;
+}
+
+fn get_route_distance(distance_matrix: &[Vec<f64>], route: &[usize]) -> f64 {
+    let mut route_iter = route.iter();
+    let mut current_city = match route_iter.next() {
+        None => return 0.0,
+        Some(v) => *v,
+    };
+
+    route_iter.fold(0.0, |mut total_distance, &next_city| {
+        total_distance += distance_matrix[current_city as usize][next_city as usize];
+        current_city = next_city;
+        total_distance
+    })
+}
+
+fn get_distance_matrix(star_systems: &[(f64, f64)]) -> Vec<Vec<f64>> {
+    star_systems
+        .iter()
+        .map(|row| {
+            star_systems
+                .iter()
+                .map(|column| ((column.0 - row.0).powi(2) + (column.1 - row.1).powi(2)).sqrt())
+                .collect::<Vec<f64>>()
+        })
+        .collect::<Vec<Vec<f64>>>()
 }
 
 #[derive(Serialize, Deserialize, Debug)]
