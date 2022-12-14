@@ -10,6 +10,7 @@ import backoff
 from os import system, name
 from time import sleep
 
+# The original lookup algorithm
 def next_lexicographic_permutation(x):
   
   i = len(x) - 2
@@ -44,11 +45,30 @@ def reverse(arr, i):
     arr[i], arr[j] = arr[j], arr[i]
     i += 1
     j -= 1
+    
+# New algorithm for calculating the Permutation based on a given integer
+def nthPerm(n,elems):#with n from 0
+    output = []
+    while len(elems) > 0:
+        if(len(elems) == 1):
+           output.append(elems[0])
+           elems.remove(elems[0])
+           continue
+        sizeGroup = math.factorial(len(elems)-1)
+        q,r = divmod(n,sizeGroup)
+        v = elems[q]
+        elems.remove(v)
+        output.append(v)
+        n = r
+    return output
 
+# Gives some details if we are forced to back off during a connect or send event
 def backoff_hdlr(details):
   print ("Backing off {wait:0.1f} seconds after {tries} tries "
         "calling function {target} with args {args} and kwargs "
         "{kwargs}".format(**details))
+  
+# Added the backoff decorators to retry without hammering the server if it unreachable or offline for any reason
 
 @backoff.on_exception(backoff.expo,
                       (requests.exceptions.Timeout,
@@ -67,6 +87,7 @@ def get_work_unit():
 def send_work_unit(data):
   x = requests.post(post_url, data, timeout=3)
   
+# Quick and dirty screen clearer that works with windows or linux
 def clear():
   if name == 'nt':
     _ = system('cls')
@@ -74,6 +95,7 @@ def clear():
   else:
     _ = system('clear')
 
+# used for updating against checkpoints. not currently in use
 def output_things(iteration, lowest, identifier):
   clear()
   print("Truckers@Home")
@@ -81,7 +103,7 @@ def output_things(iteration, lowest, identifier):
   print("[{}] Checkpoint {:,.0f} / 10".format(datetime.datetime.now().strftime("%H:%M:%S"), iteration / 1_000_000))
   print("Lowest Distance found so far ({:,.3f})".format(lowest))
 
-
+# The list of systems we are testing the shortest distances for
 lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125},\
   "1":{"name":"Wolf 124","x":-7.25,"y":-27.1562,"z":-19.0938},\
   "2":{"name":"Midgcut","x":-14.625,"y":10.3438,"z":13.1562},\
@@ -116,10 +138,14 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
   "31":{"name":"Avik","x":13.9688,"y":-4.59375,"z":-6.0},\
   "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
-version = "P.0.1.4"
+version = "P.0.2.0"
 
-# ip = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 22, 29, 28, 21, 31, 30, 27, 23, 24, 32, 19, 25, 26, 20, 18]
+# sorted first permutation for the nthPerm lookup
+# we are no longer importing a seed as the nthPerm function
+# now generates the seed for us from the iteration number
+first_perm = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
 
+# Psymons has implemented a 2d array, this is by far the fastest lookup option we have made so far
 b = [[0 for i in range(33)] for j in range(33)]
 for x in range(33):
   for y in range(33):
@@ -129,27 +155,33 @@ for x in range(33):
       b[x][y] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
 
 
-
-get_url = 'http://136.244.76.145:4567/work.json'
-post_url = 'http://136.244.76.145:4567/result'
+# Changed the URL to a small work server from the old hosted one
+get_url = 'http://92.237.68.184:4567/work.json'
+post_url = 'http://92.237.68.184:4567/result'
 
 while True:
+  # starts at a high amount to force the first iteration to populate the variable
   lowest_total = 9999
   lowest_perm = []
   start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   start = datetime.datetime.now()
   clear()
+  # gets the work unit from the server
   x = get_work_unit()
 
   data = x.json()
-  ip = data['perm']
   identifier = data['identifier']
   iteration = data['iteration']
+  
+  # the function that generated the initial seed that the main work loop uses
+  ip = nthPerm(int(iteration),first_perm[:])
   
   print("Truckers@Home")
   print("Working on unit : {:,.0f}".format(iteration))
 
-  for x in range(1,10_000_000):   
+  # The main work loop 
+  # we are now doing 100M iterations (up from 10M as the run time was too fast)
+  for x in range(1,100_000_000):   
     distance = b[ip[0]][ip[1]] + b[ip[1]][ip[2]] + b[ip[2]][ip[3]] +\
     b[ip[3]][ip[4]] + b[ip[4]][ip[5]] + b[ip[5]][ip[6]] +\
     b[ip[6]][ip[7]] + b[ip[7]][ip[8]] + b[ip[8]][ip[9]] +\
@@ -172,9 +204,12 @@ while True:
   finish_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   
   diff = finish - start
+  # used for debugging
   # print("Time taken => {}".format(diff))
   # print("Lowest distance => {}".format(lowest_total))
   # print("Lowest permutation => {} ".format(str(lowest_perm).replace(" ", "")))
+  
+  # The final list is generated before being sent to the server for processing
   final = {}
   final['distance'] = lowest_total
   final['identifier'] = identifier
@@ -183,5 +218,7 @@ while True:
   final['finished_at'] = finish_date
   final['version'] = version
   final = json.dumps(final)
+  
+  # Send the final list to the server
   send_work_unit(final)
   
