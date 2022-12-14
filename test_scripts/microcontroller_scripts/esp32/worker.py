@@ -9,8 +9,12 @@ import network
 import urequests as requests
 import machine
 
+# Set the ESP32 clock speed to maximum supported
 machine.freq(240000000)
-print(machine.freq())
+# print(machine.freq())
+
+# Enable Garbage collection, this is to mainly help
+# with the creation of the large 2D array
 gc.enable()
 
 def next_lexicographic_permutation(x):
@@ -48,18 +52,33 @@ def reverse(arr, i):
     i += 1
     j -= 1
     
+def nthPerm(n,elems):#with n from 0
+    output = []
+    while len(elems) > 0:
+        if(len(elems) == 1):
+           output.append(elems[0])
+           elems.remove(elems[0])
+           continue
+        sizeGroup = math.factorial(len(elems)-1)
+        q,r = divmod(n,sizeGroup)
+        v = elems[q]
+        elems.remove(v)
+        output.append(v)
+        n = r
+    return output
+    
 def do_connect():
     import network
     sta_if = network.WLAN(network.STA_IF)
     if not sta_if.isconnected():
         print('connecting to network...')
         sta_if.active(True)
-        sta_if.connect('<SSID>', '<APSSWORD>')
+        sta_if.connect('<SSID>', '<PASSWORD>')
         while not sta_if.isconnected():
             pass
     print('network config:', sta_if.ifconfig())   
 
-print("Pre dict creation memory amount : {} hash(bytes".format(gc.mem_free()))
+# print("Pre dict creation memory amount : {} hash(bytes".format(gc.mem_free()))
 
 lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125},\
           "1":{"name":"Wolf 124","x":-7.25,"y":-27.1562,"z":-19.0938},\
@@ -96,16 +115,20 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
           "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
 
-get_url = 'http://136.244.76.145:4567/tiny.json'
-post_url = 'http://136.244.76.145:4567/tiny'
+get_url = 'http://92.237.68.184:4567/tiny.json'
+post_url = 'http://92.237.68.184:4567/tiny'
 
 do_connect() # Connect to network
 
+# Perform a garbage collection before the creation of the 2D array, sometimes
+# the json parsing of the above list would cause the 2D array to fail with 
+# not enough memory errors
 gc.collect()
+
 b = {}
 b = [[0 for i in range(33)] for j in range(33)]
 for x in range(33):
-  gc.collect()
+  gc.collect() # called as the array needs memory freeing after every couple of x iterations or it will run out and crash
   for y in range(33):
     if x == y: 
       continue 
@@ -113,18 +136,27 @@ for x in range(33):
       b[x][y] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
       
 while True:
+    # Parse the data from the server
     data = json.loads((requests.get(get_url).text))
-    STEPS = 1_000_000
-    lowest_distance = 9999
-    # ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-    ip = data['perm']
+    
+    #split out the data we need
     orig_uuid = data['orig_identifier']
     tiny_uuid = data['tiny_identifier']
     iteration = data['iteration']
     work_unit = data['work_unit_number']
+    
+    STEPS = 1_000_000
+    lowest_distance = 9999
+    
+    first_perm = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+    
+    
+    ip = nthPerm(iteration, first_perm[:])
     start = time.time()
     y = 0
     print("Tiny Unit : {}".format(tiny_uuid))
+    
+    # Main work loop
     for x in range(STEPS):
         distance = b[ip[0]][ip[1]] + b[ip[1]][ip[2]] + b[ip[2]][ip[3]] +\
           b[ip[3]][ip[4]] + b[ip[4]][ip[5]] + b[ip[5]][ip[6]] +\
@@ -141,7 +173,7 @@ while True:
         if distance < lowest_distance:
             lowest_distance = distance    
     
-        if y == 500:
+        if y == 10_000:
             print ("Checkpoint {:,} / {:,}".format(x, STEPS))
             y = 0
         
@@ -160,5 +192,6 @@ while True:
     final['work_unit_numbmer'] = work_unit
     final['iteration'] = iteration
     final = json.dumps(final)
+    
+    # post the data back to the server
     req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
-    break
