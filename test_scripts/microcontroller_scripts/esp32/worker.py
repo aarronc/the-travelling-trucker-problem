@@ -115,7 +115,13 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
           "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
 
-get_url = 'http://92.237.68.184:4567/tiny.json'
+version = "ESP32 0.1.0"
+STEP_COUNT = 1 # adjust this to make your work units longer or shorter
+# esp32's will request 1
+# normal client will request 100 or more
+
+
+get_url = 'http://92.237.68.184:4567/work.json/{}'.format(STEP_COUNT)
 post_url = 'http://92.237.68.184:4567/tiny'
 
 do_connect() # Connect to network
@@ -140,12 +146,11 @@ while True:
     data = json.loads((requests.get(get_url).text))
     
     #split out the data we need
-    orig_uuid = data['orig_identifier']
-    tiny_uuid = data['tiny_identifier']
+    uuid = data['identifier']
     iteration = data['iteration']
-    work_unit = data['work_unit_number']
+    steps = int(data['step'])
+    steps = steps * 1_000_000
     
-    STEPS = 1_000_000
     lowest_distance = 9999
     
     first_perm = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
@@ -154,10 +159,10 @@ while True:
     ip = nthPerm(iteration, first_perm[:])
     start = time.time()
     y = 0
-    print("Tiny Unit : {}".format(tiny_uuid))
+    print("Unit : {} ({:,.0f} iterations)".format(uuid))
     
     # Main work loop
-    for x in range(STEPS):
+    for x in range(steps):
         distance = b[ip[0]][ip[1]] + b[ip[1]][ip[2]] + b[ip[2]][ip[3]] +\
           b[ip[3]][ip[4]] + b[ip[4]][ip[5]] + b[ip[5]][ip[6]] +\
           b[ip[6]][ip[7]] + b[ip[7]][ip[8]] + b[ip[8]][ip[9]] +\
@@ -174,7 +179,7 @@ while True:
             lowest_distance = distance    
     
         if y == 10_000:
-            print ("Checkpoint {:,} / {:,}".format(x, STEPS))
+            print ("Checkpoint {:,} / {:,}".format(x, steps))
             y = 0
         
         y += 1           
@@ -182,15 +187,14 @@ while True:
     
     finish = time.time()
     diff = finish - start
-    print("Time Taken for a run of {:,.0f} iterations : {} seconds".format(STEPS, diff))
+    print("Time Taken for a run of {:,.0f} iterations : {} seconds".format(steps, diff))
     print("lowest distance in run : {}".format(lowest_distance))
 
     final = {}
-    final['orig_identifier'] = orig_uuid
-    final['tiny_identifier'] = tiny_uuid
+    final['identifier'] = orig_uuid
     final['distance'] = lowest_distance
-    final['work_unit_numbmer'] = work_unit
-    final['iteration'] = iteration
+    final['duration'] = str(diff)
+    final['version'] = version
     final = json.dumps(final)
     
     # post the data back to the server
