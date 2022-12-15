@@ -179,7 +179,7 @@ while True:
             lowest_distance = distance    
     
         if y == 10_000:
-            print ("Checkpoint {:,} / {:,}".format(x, STEPS))
+            print ("Checkpoint {:,} / {:,}".format(x, steps))
             y = 0
         
         y += 1           
@@ -187,7 +187,7 @@ while True:
     
     finish = time.time()
     diff = finish - start
-    print("Time Taken for a run of {:,.0f} iterations : {} seconds".format(STEPS, diff))
+    print("Time Taken for a run of {:,.0f} iterations : {} seconds".format(steps, diff))
     print("lowest distance in run : {}".format(lowest_distance))
 
     final = {}
