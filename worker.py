@@ -140,6 +140,10 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
 lookup = json.loads(lookup)
 version = "P.0.2.0"
 
+STEP_COUNT = 100 # adjust this to make your work units longer or shorter
+# esp32's will request 1
+# normal client will request 100 or more
+
 # sorted first permutation for the nthPerm lookup
 # we are no longer importing a seed as the nthPerm function
 # now generates the seed for us from the iteration number
@@ -156,7 +160,7 @@ for x in range(33):
 
 
 # Changed the URL to a small work server from the old hosted one
-get_url = 'http://92.237.68.184:4567/work.json'
+get_url = 'http://92.237.68.184:4567/work.json/{}'.format(STEP_COUNT)
 post_url = 'http://92.237.68.184:4567/result'
 
 while True:
@@ -172,16 +176,18 @@ while True:
   data = x.json()
   identifier = data['identifier']
   iteration = data['iteration']
+  steps = int(data['step'])
+  steps = steps * 1_000_000
   
   # the function that generated the initial seed that the main work loop uses
   ip = nthPerm(int(iteration),first_perm[:])
   
   print("Truckers@Home")
-  print("Working on unit : {:,.0f}".format(iteration))
+  print("Working on unit : {:,.0f} ({:,.0f} Iterations)".format(iteration, steps))
 
   # The main work loop 
   # we are now doing 100M iterations (up from 10M as the run time was too fast)
-  for x in range(1,100_000_000):   
+  for x in range(1,steps):   
     distance = b[ip[0]][ip[1]] + b[ip[1]][ip[2]] + b[ip[2]][ip[3]] +\
     b[ip[3]][ip[4]] + b[ip[4]][ip[5]] + b[ip[5]][ip[6]] +\
     b[ip[6]][ip[7]] + b[ip[7]][ip[8]] + b[ip[8]][ip[9]] +\
@@ -211,9 +217,8 @@ while True:
   
   # The final list is generated before being sent to the server for processing
   final = {}
-  final['distance'] = lowest_total
   final['identifier'] = identifier
-  final['perm'] = lowest_perm
+  final['distance'] = lowest_total
   final['duration'] = str(diff)
   final['finished_at'] = finish_date
   final['version'] = version
