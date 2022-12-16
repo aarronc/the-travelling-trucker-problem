@@ -2,13 +2,17 @@ use cgmath::MetricSpace;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::Rng;
+use rayon::iter::MaxLen;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::env;
 use std::f32::consts::E;
+use std::io;
+use std::io::Write;
+use std::time::Duration;
 use std::time::Instant;
-use thousands::Separable;
+use thousands::Separable; // <--- bring flush() into scope
 
 // This is my first ever Rust program, so I'm definitely not writing good idiomatic Rust
 const DEFAULT_SIMULATION_COUNT: u32 = 500;
@@ -16,8 +20,8 @@ const DEFAULT_SIMULATION_COUNT: u32 = 500;
 fn help() {
     println!(
         "usage:
-        ttp_simulation [simulation count]
-  Solve the travelling trucker problem with the specified number of simulations, or a default of {}",
+        ttp_simulation [simulation count] [seed route]
+  Solve the travelling trucker problem with the specified number of simulations, or a default of {}. You can also provide a seed route to base initial conditions on",
         DEFAULT_SIMULATION_COUNT
     );
 }
@@ -25,35 +29,25 @@ fn help() {
 fn main() {
     let start = Instant::now();
 
-    let mut simulation_run_count = 2000;
+    let mut simulation_run_count = DEFAULT_SIMULATION_COUNT;
     let mut seed_route: Vec<usize> = Vec::new();
 
     // Get some args
     let args: Vec<String> = env::args().collect();
-    println!("args.len={}", args.len());
     match args.len() {
-        // no arguments passed
-        1 => {
-            println!(
-                "Running with default simulation count of {}",
-                DEFAULT_SIMULATION_COUNT
-            );
-            simulation_run_count = DEFAULT_SIMULATION_COUNT;
-        }
+        1 => {} // no arguments passed
+        // One arg - Iteration count
         2 => {
             let simulation_run_count_arg = &args[1];
             // parse the number
             let number: u32 = match simulation_run_count_arg.parse() {
                 Ok(n) => n,
                 Err(_) => {
-                    eprintln!(
-                        "error: you must give the program a simulation count as the first argument"
-                    );
+                    eprintln!("Error: you must provide a simulation count as the first argument");
                     return;
                 }
             };
             simulation_run_count = number;
-            println!("Running with simulation count of {}", simulation_run_count);
         }
         3 => {
             let simulation_run_count_arg = &args[1];
@@ -61,24 +55,19 @@ fn main() {
             let number: u32 = match simulation_run_count_arg.parse() {
                 Ok(n) => n,
                 Err(_) => {
-                    eprintln!(
-                        "error: you must give the program a simulation count as the first argument"
-                    );
+                    eprintln!("Error: you must provide a simulation count as the first argument");
                     return;
                 }
             };
             simulation_run_count = number;
 
             let user_route_arg = &args[2];
-            println!("user_route_arg={}", user_route_arg);
             let user_route: Vec<usize> = user_route_arg
                 .split(",")
                 .into_iter()
                 .map(|idx| idx.trim().parse::<usize>().unwrap())
                 .collect();
             seed_route = user_route.clone();
-
-            println!("Parsed user route");
         }
         _ => {
             // show a help message
@@ -87,7 +76,6 @@ fn main() {
     }
 
     let json_string = get_json();
-
     type Dictionary = HashMap<usize, StarSystem>;
     let star_systems: Dictionary = serde_json::from_str(json_string).unwrap();
 
@@ -99,9 +87,9 @@ fn main() {
         .collect();
 
     // Dump each system in order, to validate
-    for key in star_systems.keys().sorted() {
-        println!("Index: {}, star system: {:?}", key, star_systems[key]);
-    }
+    // for key in star_systems.keys().sorted() {
+    //     println!("Index: {}, star system: {:?}", key, star_systems[key]);
+    // }
 
     let star_system_names: HashMap<_, _> = star_systems
         .keys()
@@ -110,7 +98,7 @@ fn main() {
         .collect();
 
     let star_system_count = star_systems.keys().len();
-    println!("Total system count: {}", star_system_count);
+    println!("Loaded {} star systems from JSON", star_system_count);
 
     // validate the user route
     let mut star_system_keys_validation_copy = star_system_keys.clone();
@@ -120,10 +108,12 @@ fn main() {
         &mut seed_route_keys_validation_copy,
     );
 
-    if seed_route_is_valid {
-        println!("Provided route {:?} is valid", seed_route);
-    } else if seed_route.len() > 0 {
-        println!("Provided route {:?} is NOT valid", seed_route);
+    // Now we've loaded the JSON, we can validate the seed route
+    if !seed_route_is_valid && seed_route.len() > 0 {
+        println!(
+            "Seed route {:?} is NOT valid. It must represent a complete route using all star system indices",
+            seed_route
+        );
         return;
     }
 
@@ -144,66 +134,68 @@ fn main() {
         star_system_distances_2d[*dest_key as usize][*source_key as usize] = distance;
     }
 
-    println!(
-        "Constructed distance cache with {} entries",
-        star_system_distances_2d.len() * star_system_distances_2d.len()
-    );
-
     // move the best route down from floatmax
     let mut overall_best_route_distance = std::f32::MAX;
     let mut overall_best_route: Vec<usize> = Vec::new();
 
-    let _initial_temperature = 900.0;
-    let _cooling_ratio = 0.998;
+    let _initial_temperature = 700.0;
+    let _cooling_ratio = 0.997;
     let iterations_at_temperature: u32 = 2000;
     let mut total_iterations: u64 = 0;
 
     let mut rng = rand::thread_rng();
-    let simulation_durations_count = 10;
-    let mut simulation_durations_in_millis: VecDeque<u32> =
-        VecDeque::with_capacity(simulation_durations_count);
-
-    let mut last_simulation_iteration_count = 0;
+    let simulation_durations_count = 20;
+    let mut simulation_durations_in_millis: VecDeque<u32> = VecDeque::new();
 
     let mut randomised_route: Vec<usize> = star_system_keys
         .into_iter()
         .map(|x| usize::try_from(x).unwrap())
         .collect_vec();
+
     randomised_route.shuffle(&mut rng);
 
-    for i in 1..simulation_run_count {
+    for i in 0..simulation_run_count {
         // let random_initial_temperature = rng.gen_range(500.0..700.0);
         // let random_cooling_ratio = rng.gen_range(0.996..0.998);
 
         let sim_start = Instant::now();
 
-        let remaining_time = if i as usize > simulation_durations_count {
-            let average_sim_duration = simulation_durations_in_millis.iter().sum::<u32>() as f64
-                / simulation_durations_count as f64;
-            let remaining_simulations = simulation_run_count - i;
-            let remaining_seconds_duration =
-                average_sim_duration * remaining_simulations as f64 / 1000.0;
+        let remaining_duration_option: Option<Duration> =
+            if simulation_durations_in_millis.len() > 0 {
+                let average_sim_duration_millis = simulation_durations_in_millis.iter().sum::<u32>()
+                    as f32
+                    / simulation_durations_in_millis.len() as f32;
 
-            remaining_seconds_duration
-        } else {
-            0.0 as f64
-        };
+                let remaining_simulations = simulation_run_count - i;
+
+                let remaining_seconds_duration =
+                    (average_sim_duration_millis * remaining_simulations as f32) / 1000.0;
+
+                Some(Duration::from_secs(remaining_seconds_duration as u64))
+            } else {
+                None
+            };
 
         let mut output_string = String::new();
-        let string_start = format!(
-            "Starting simulation {}/{} -- Best route distance {:.1}ly",
-            i, simulation_run_count, overall_best_route_distance
-        );
-        output_string.push_str(&string_start);
+        let sim_string = format!("-- Simulation {}/{}", (i + 1), simulation_run_count,);
+        output_string.push_str(&sim_string);
 
-        if remaining_time > 0.0 {
-            let string_end = format!(
-                " -- Estimated time remaining {:.0}s -- Iterations per sim {}",
-                remaining_time, last_simulation_iteration_count
-            );
-            output_string.push_str(&string_end);
+        if overall_best_route_distance < std::f32::MAX {
+            let best_route_string = format!(" -- Best route {:.1}ly", overall_best_route_distance);
+            output_string.push_str(&best_route_string);
         }
-        println!("{}", output_string);
+
+        if let Some(remaining_duration) = remaining_duration_option {
+            let string_end = format!(" -- Time remaining {:?}", remaining_duration);
+            output_string.push_str(&string_end);
+        };
+
+        if i == simulation_run_count - 1 {
+            println!("\n{}", output_string);
+        } else {
+            print!("\r{}", output_string);
+            io::stdout().flush().unwrap();
+        }
 
         let initital_route: Vec<usize> = if seed_route_is_valid {
             seed_route.clone()
@@ -219,8 +211,6 @@ fn main() {
             _cooling_ratio,
         );
 
-        last_simulation_iteration_count = iterations;
-
         let simulation_best_route_distance =
             route_distance_2d_array(&simulation_best_route, &star_system_distances_2d);
 
@@ -229,7 +219,7 @@ fn main() {
             overall_best_route = simulation_best_route.clone();
 
             println!(
-                "New shortest route found with total distance of {:.1} via indices {:?}",
+                "\nNew shortest route found with total distance of {:.1} via indices {:?}",
                 overall_best_route_distance, overall_best_route
             );
         }
@@ -245,11 +235,13 @@ fn main() {
         total_iterations += iterations as u64;
     }
 
+    // FINISHED!
     let duration = start.elapsed();
 
+    println!("Best route:");
     print_named_route(&overall_best_route, &star_system_names);
     println!(
-        "Shortest route found with total distance of {:.1} via indices {:?}",
+        "Route distance is {:.1} via indices {:?}",
         overall_best_route_distance, overall_best_route
     );
     println!(
@@ -257,9 +249,7 @@ fn main() {
         total_iterations.separate_with_commas(),
         simulation_run_count,
         duration.as_secs(),
-        ((simulation_run_count as f64 * last_simulation_iteration_count as f64
-            / duration.as_secs() as f64) as i64)
-            .separate_with_commas()
+        ((total_iterations as f64 / duration.as_secs() as f64) as u64).separate_with_commas()
     );
 }
 
@@ -268,7 +258,10 @@ fn print_named_route(route: &Vec<usize>, star_systems: &HashMap<&usize, String>)
         let source = route[idx - 1];
         let dest = route[idx];
 
-        println!("{} -> {}", star_systems[&source], star_systems[&dest]);
+        println!(
+            " {:0>2}: {} -> {}",
+            idx, star_systems[&source], star_systems[&dest]
+        );
     }
 }
 
