@@ -144,7 +144,7 @@ fn main() {
     let mut total_iterations: u64 = 0;
 
     let mut rng = rand::thread_rng();
-    let simulation_durations_count = 20;
+    let simulation_durations_count = 40;
     let mut simulation_durations_in_millis: VecDeque<u32> = VecDeque::new();
 
     let mut randomised_route: Vec<usize> = star_system_keys
@@ -154,14 +154,19 @@ fn main() {
 
     randomised_route.shuffle(&mut rng);
 
+    let mut remaining_duration_option: Option<Duration> = None; // Store the estimated remaining time
+    let remaining_time_update_interval = Duration::from_secs(1); // Update the remaining time every X
+
+    let mut remaining_duration_calculation_time = Instant::now();
+
     for i in 0..simulation_run_count {
         // let random_initial_temperature = rng.gen_range(500.0..700.0);
         // let random_cooling_ratio = rng.gen_range(0.996..0.998);
 
         let sim_start = Instant::now();
 
-        let remaining_duration_option: Option<Duration> =
-            if simulation_durations_in_millis.len() > 0 {
+        if remaining_duration_calculation_time.elapsed() > remaining_time_update_interval {
+            remaining_duration_option = if simulation_durations_in_millis.len() > 0 {
                 let average_sim_duration_millis = simulation_durations_in_millis.iter().sum::<u32>()
                     as f32
                     / simulation_durations_in_millis.len() as f32;
@@ -176,6 +181,9 @@ fn main() {
                 None
             };
 
+            remaining_duration_calculation_time = Instant::now();
+        }
+
         let mut output_string = String::new();
         let sim_string = format!("-- Simulation {}/{}", (i + 1), simulation_run_count,);
         output_string.push_str(&sim_string);
@@ -186,7 +194,16 @@ fn main() {
         }
 
         if let Some(remaining_duration) = remaining_duration_option {
-            let string_end = format!(" -- Time remaining {:?}", remaining_duration);
+            let duration_seconds = remaining_duration.as_secs() % 60;
+            let duration_minutes = remaining_duration.as_secs() / 60;
+            let string_end = if duration_minutes > 0 {
+                format!(
+                    " -- Estimated time remaining {:0>2}m {:0>2}s",
+                    duration_minutes, duration_seconds
+                )
+            } else {
+                format!(" -- Estimated time remaining {:0>2}s", duration_seconds)
+            };
             output_string.push_str(&string_end);
         };
 
