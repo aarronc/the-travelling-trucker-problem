@@ -9,6 +9,8 @@ import network
 import urequests as requests
 import machine
 
+sta_if = network.WLAN(network.STA_IF)
+
 # Set the ESP32 clock speed to maximum supported
 machine.freq(240000000)
 # print(machine.freq())
@@ -115,14 +117,16 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
           "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
 
-version = "ESP32 0.1.0"
+version = "ESP32 0.1.1"
+NAME = "Sparky"
+
 STEP_COUNT = 1 # adjust this to make your work units longer or shorter
 # esp32's will request 1
 # normal client will request 100 or more
 
 
 get_url = 'http://92.237.68.184:4567/work.json/{}'.format(STEP_COUNT)
-post_url = 'http://92.237.68.184:4567/tiny'
+post_url = 'http://92.237.68.184:4567/result'
 
 do_connect() # Connect to network
 
@@ -142,6 +146,10 @@ for x in range(33):
       b[x][y] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
       
 while True:
+  
+    if not sta_if.isconnected():
+        do_connect()
+      
     # Parse the data from the server
     data = json.loads((requests.get(get_url).text))
     
@@ -159,7 +167,7 @@ while True:
     ip = nthPerm(iteration, first_perm[:])
     start = time.time()
     y = 0
-    print("Unit : {} ({:,.0f} iterations)".format(uuid))
+    print("Unit : {:,} ({:,} iterations)".format(iteration, steps))
     
     # Main work loop
     for x in range(steps):
@@ -191,11 +199,16 @@ while True:
     print("lowest distance in run : {}".format(lowest_distance))
 
     final = {}
-    final['identifier'] = orig_uuid
+    final['identifier'] = uuid
     final['distance'] = lowest_distance
     final['duration'] = str(diff)
     final['version'] = version
+    final['name'] = NAME
     final = json.dumps(final)
     
+    # check if we are still connected
+    if not sta_if.isconnected():
+      do_connect()
+          
     # post the data back to the server
     req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
