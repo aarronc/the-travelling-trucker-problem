@@ -82,7 +82,7 @@ lowest_perm = []
 y = 0
 start = Time.now
 puts "[#{start.utc.iso8601}] Start"
-1.upto(10_000_000) do |x|
+1.upto(1_000_000) do |x|
   y += 1
   if y < 1_000_000
   else
