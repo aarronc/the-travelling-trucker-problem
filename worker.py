@@ -140,7 +140,7 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
 lookup = json.loads(lookup)
 version = "P.0.2.0"
 
-STEP_COUNT = 100 # adjust this to make your work units longer or shorter
+STEP_COUNT = 1000 # adjust this to make your work units longer or shorter
 # esp32's will request 1
 # normal client will request 100 or more
 
