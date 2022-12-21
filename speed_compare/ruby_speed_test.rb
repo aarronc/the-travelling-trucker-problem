@@ -70,49 +70,47 @@ b = {}
   end
 end
 
-while true do 
-  
-  identifier = 0
 
-  # ip variable shortened from initial_permutation
-  ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-  
-  lowest_total = 9999
-  lowest_perm = []
 
-  y = 0
-  start = Time.now
-  puts "[#{start.utc.iso8601}] Start"
-  1.upto(10_000_000) do |x|
-    y += 1
-    if y < 1_000_000
-    else
-      puts "[#{Time.now.utc.iso8601}] Checkpoint #{add_comma(x)} / 10,000,000"
-      y = 0
-    end
-    total = 0
-    distance = b["#{ip[0]}-#{ip[1]}"] + b["#{ip[1]}-#{ip[2]}"] + b["#{ip[2]}-#{ip[3]}"] + b["#{ip[3]}-#{ip[4]}"] + b["#{ip[4]}-#{ip[5]}"] +
-           b["#{ip[5]}-#{ip[6]}"] + b["#{ip[6]}-#{ip[7]}"] + b["#{ip[7]}-#{ip[8]}"] + b["#{ip[8]}-#{ip[9]}"] + b["#{ip[9]}-#{ip[10]}"] +
-           b["#{ip[10]}-#{ip[11]}"] + b["#{ip[11]}-#{ip[12]}"] + b["#{ip[12]}-#{ip[13]}"] + b["#{ip[13]}-#{ip[14]}"] + b["#{ip[14]}-#{ip[15]}"] +
-           b["#{ip[15]}-#{ip[16]}"] + b["#{ip[16]}-#{ip[17]}"] + b["#{ip[17]}-#{ip[18]}"] + b["#{ip[18]}-#{ip[19]}"] + b["#{ip[19]}-#{ip[20]}"] +
-           b["#{ip[20]}-#{ip[21]}"] + b["#{ip[21]}-#{ip[22]}"] + b["#{ip[22]}-#{ip[23]}"] + b["#{ip[23]}-#{ip[24]}"] + b["#{ip[24]}-#{ip[25]}"] +
-           b["#{ip[25]}-#{ip[26]}"] + b["#{ip[26]}-#{ip[27]}"] + b["#{ip[27]}-#{ip[28]}"] + b["#{ip[28]}-#{ip[29]}"] + b["#{ip[29]}-#{ip[30]}"] +
-           b["#{ip[30]}-#{ip[31]}"] + b["#{ip[31]}-#{ip[32]}"]
-      total = total + distance
-    if total < lowest_total
-      lowest_total = total
-      lowest_perm = ip
-      # puts "new lowest found on perm #{add_comma(x)} -> #{lowest_total.round(2)} -> #{ip.to_s.gsub!(" ","")}"
-    end
-    # sleep(60)
-    # Perm should be interated at the end of the calculation
-    ip = next_lexicographic_permutation(ip)
+identifier = 0
+
+# ip variable shortened from initial_permutation
+ip = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+
+lowest_total = 9999
+lowest_perm = []
+
+y = 0
+start = Time.now
+puts "[#{start.utc.iso8601}] Start"
+1.upto(10_000_000) do |x|
+  y += 1
+  if y < 1_000_000
+  else
+    puts "[#{Time.now.utc.iso8601}] Checkpoint #{add_comma(x)} / 10,000,000"
+    y = 0
   end
-  finish = Time.now
-  puts "[#{finish.utc.iso8601}] Finish"
-  puts "Lowest found this time -> #{lowest_total}"
-  puts "permutation -> #{lowest_perm}"
-  diff = finish - start
-  puts "Time taken #{diff.round(3)} seconds"
-  
+  total = 0
+  distance = b["#{ip[0]}-#{ip[1]}"] + b["#{ip[1]}-#{ip[2]}"] + b["#{ip[2]}-#{ip[3]}"] + b["#{ip[3]}-#{ip[4]}"] + b["#{ip[4]}-#{ip[5]}"] +
+          b["#{ip[5]}-#{ip[6]}"] + b["#{ip[6]}-#{ip[7]}"] + b["#{ip[7]}-#{ip[8]}"] + b["#{ip[8]}-#{ip[9]}"] + b["#{ip[9]}-#{ip[10]}"] +
+          b["#{ip[10]}-#{ip[11]}"] + b["#{ip[11]}-#{ip[12]}"] + b["#{ip[12]}-#{ip[13]}"] + b["#{ip[13]}-#{ip[14]}"] + b["#{ip[14]}-#{ip[15]}"] +
+          b["#{ip[15]}-#{ip[16]}"] + b["#{ip[16]}-#{ip[17]}"] + b["#{ip[17]}-#{ip[18]}"] + b["#{ip[18]}-#{ip[19]}"] + b["#{ip[19]}-#{ip[20]}"] +
+          b["#{ip[20]}-#{ip[21]}"] + b["#{ip[21]}-#{ip[22]}"] + b["#{ip[22]}-#{ip[23]}"] + b["#{ip[23]}-#{ip[24]}"] + b["#{ip[24]}-#{ip[25]}"] +
+          b["#{ip[25]}-#{ip[26]}"] + b["#{ip[26]}-#{ip[27]}"] + b["#{ip[27]}-#{ip[28]}"] + b["#{ip[28]}-#{ip[29]}"] + b["#{ip[29]}-#{ip[30]}"] +
+          b["#{ip[30]}-#{ip[31]}"] + b["#{ip[31]}-#{ip[32]}"]
+    total = total + distance
+  if total < lowest_total
+    lowest_total = total
+    lowest_perm = ip
+    # puts "new lowest found on perm #{add_comma(x)} -> #{lowest_total.round(2)} -> #{ip.to_s.gsub!(" ","")}"
+  end
+  # sleep(60)
+  # Perm should be interated at the end of the calculation
+  ip = next_lexicographic_permutation(ip)
 end
+finish = Time.now
+puts "[#{finish.utc.iso8601}] Finish"
+puts "Lowest found this time -> #{lowest_total}"
+puts "permutation -> #{lowest_perm}"
+diff = finish - start
+puts "Time taken #{diff.round(3)} seconds"
