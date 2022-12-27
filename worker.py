@@ -2,12 +2,13 @@
 # created by Psymons and Entarius Fusion
 # (c) 2022
 
-import math
-import json
-import datetime
-import requests
 import backoff
+import datetime
+import json
+import math
 from os import system, name
+import requests
+import sys
 from time import sleep
 
 # The original lookup algorithm
@@ -140,7 +141,7 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
 lookup = json.loads(lookup)
 version = "P.0.2.0"
 
-STEP_COUNT = 1000 # adjust this to make your work units longer or shorter
+STEP_COUNT = 100 # adjust this to make your work units longer or shorter
 # esp32's will request 1
 # normal client will request 100 or more
 
@@ -162,6 +163,11 @@ for x in range(33):
 # Changed the URL to a small work server from the old hosted one
 get_url = 'http://92.237.68.184:4567/work.json/{}'.format(STEP_COUNT)
 post_url = 'http://92.237.68.184:4567/result'
+clear()
+print("Truckers@Home")
+print("Getting work block size of {:,} Million Iterations each".format(STEP_COUNT))
+print("Beginning Work on First unit...")
+print("")
 
 while True:
   # starts at a high amount to force the first iteration to populate the variable
@@ -169,7 +175,6 @@ while True:
   lowest_perm = []
   start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   start = datetime.datetime.now()
-  clear()
   # gets the work unit from the server
   x = get_work_unit()
 
@@ -179,11 +184,12 @@ while True:
   steps = int(data['step'])
   steps = steps * 1_000_000
   
+  # sys.stdout.write("\r" + f"[{start_date}] ITR: {iteration:,} STARTED")
+  # sys.stdout.flush()
+  
   # the function that generated the initial seed that the main work loop uses
   ip = nthPerm(int(iteration),first_perm[:])
   
-  print("Truckers@Home")
-  print("Working on unit : {:,.0f} ({:,.0f} Iterations)".format(iteration, steps))
 
   # The main work loop 
   # we are now doing 100M iterations (up from 10M as the run time was too fast)
@@ -223,7 +229,8 @@ while True:
   final['finished_at'] = finish_date
   final['version'] = version
   final = json.dumps(final)
-  
+  sys.stdout.write("\r[{}] ITR: {:,.0f} FINISH: {} LOWEST: {}".format(finish_date, iteration, diff, lowest_total))
+  sys.stdout.flush()
   # Send the final list to the server
   send_work_unit(final)
   
