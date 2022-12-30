@@ -10,6 +10,9 @@ from os import system, name
 import requests
 import sys
 from time import sleep
+import zlib
+
+COMPRESSED_OCTET_STREAM = {'content-type': 'application/octet-stream', 'content-encoding': 'zlib'}
 
 # The original lookup algorithm
 def next_lexicographic_permutation(x):
@@ -86,7 +89,8 @@ def get_work_unit():
                        requests.exceptions.RequestException,
                        requests.exceptions.RetryError),on_backoff=backoff_hdlr)
 def send_work_unit(data):
-  x = requests.post(post_url, data, timeout=3)
+  compressed_data = zlib.compress(data.encode('utf-8'))
+  x = requests.post(post_url, compressed_data, timeout=3, headers=COMPRESSED_OCTET_STREAM)
   
 # Quick and dirty screen clearer that works with windows or linux
 def clear():
@@ -141,9 +145,12 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
 lookup = json.loads(lookup)
 version = "P.0.2.0"
 
-STEP_COUNT = 100 # adjust this to make your work units longer or shorter
-# esp32's will request 1
+CMDR = "EntariusFusion"
+STEP_COUNT = 5000 # adjust this to make your work units longer or shorter
+# esp32's will request 1 to 5 depending on setup
 # normal client will request 100 or more
+# maximum currently is 5000
+# 5000 should take a modern CPU around about 30 mins
 
 # sorted first permutation for the nthPerm lookup
 # we are no longer importing a seed as the nthPerm function
@@ -161,8 +168,8 @@ for x in range(33):
 
 
 # Changed the URL to a small work server from the old hosted one
-get_url = 'http://92.237.68.184:4567/work.json/{}'.format(STEP_COUNT)
-post_url = 'http://92.237.68.184:4567/result'
+get_url = 'http://hot.forthemug.com:4567/work.json/{}'.format(STEP_COUNT)
+post_url = 'http://hot.forthemug.com:4567/result'
 clear()
 print("Truckers@Home")
 print("Getting work block size of {:,} Million Iterations each".format(STEP_COUNT))
@@ -228,6 +235,7 @@ while True:
   final['duration'] = str(diff)
   final['finished_at'] = finish_date
   final['version'] = version
+  final['truckers_at_home'] = 1
   final = json.dumps(final)
   sys.stdout.write("\r[{}] ITR: {:,.0f} FINISH: {} LOWEST: {}".format(finish_date, iteration, diff, lowest_total))
   sys.stdout.flush()
