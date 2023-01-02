@@ -1,5 +1,8 @@
-# Time Taken for a run of 10000 iterations : 32 seconds
-# lowest distance in run : 1002.472
+# Note: ESP32 has a lack of compression for zlib or uzlib
+# modules, setting the esp32 : 'yes' in the header information
+# when sending the result prompts the server not to try and
+# uncompress the data when its sent, going to have to use this
+# workaround until they implement something in the stdlib for Micorpython
 
 import math
 import json
@@ -54,7 +57,7 @@ def reverse(arr, i):
     i += 1
     j -= 1
     
-def nthPerm(n,elems):#with n from 0
+def int_to_perm(n,elems):#with n from 0
     output = []
     while len(elems) > 0:
         if(len(elems) == 1):
@@ -68,6 +71,14 @@ def nthPerm(n,elems):#with n from 0
         output.append(v)
         n = r
     return output
+
+def perm_to_int(numbers): # takes the permutation list and converts it to an integer thanks ChatGPT :)
+    base = len(numbers)
+    lehmer = 0
+    for i, num in enumerate(numbers):
+        smaller = sum(1 for j in numbers[i + 1:] if j < num)
+        lehmer += smaller * math.factorial(base - i - 1)
+    return lehmer
     
 def do_connect():
     import network
@@ -78,7 +89,7 @@ def do_connect():
         sta_if.connect('<SSID>', '<PASSWORD>')
         while not sta_if.isconnected():
             pass
-    print('network config:', sta_if.ifconfig())   
+    print('network config:', sta_if.ifconfig())
 
 # print("Pre dict creation memory amount : {} hash(bytes".format(gc.mem_free()))
 
@@ -117,7 +128,7 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
           "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
 
-version = "ESP32 0.1.1"
+version = "ESP32 0.2.0"
 NAME = "Sparky"
 
 STEP_COUNT = 1 # adjust this to make your work units longer or shorter
@@ -125,8 +136,8 @@ STEP_COUNT = 1 # adjust this to make your work units longer or shorter
 # normal client will request 100 or more
 
 
-get_url = 'http://92.237.68.184:4567/work.json/{}'.format(STEP_COUNT)
-post_url = 'http://92.237.68.184:4567/result'
+get_url = 'http://hot.forthemug.com:4567/work.json/{}'.format(STEP_COUNT)
+post_url = 'http://hot.forthemug.com:4567/result'
 
 do_connect() # Connect to network
 
@@ -160,11 +171,12 @@ while True:
     steps = steps * 1_000_000
     
     lowest_distance = 9999
+    lowest_perm = []
     
     first_perm = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
     
     
-    ip = nthPerm(iteration, first_perm[:])
+    ip = int_to_perm(iteration, first_perm[:])
     start = time.time()
     y = 0
     print("Unit : {:,} ({:,} iterations)".format(iteration, steps))
@@ -184,7 +196,8 @@ while True:
           b[ip[30]][ip[31]] + b[ip[31]][ip[32]]
           
         if distance < lowest_distance:
-            lowest_distance = distance    
+            lowest_distance = distance
+            lowest_perm = ip  
     
         if y == 10_000:
             print ("Checkpoint {:,} / {:,}".format(x, steps))
@@ -204,6 +217,8 @@ while True:
     final['duration'] = str(diff)
     final['version'] = version
     final['name'] = NAME
+    final['lowest_perm_int'] = perm_to_int(lowest_perm)
+    final['truckers_at_home'] = 1
     final = json.dumps(final)
     
     # check if we are still connected
@@ -211,4 +226,4 @@ while True:
       do_connect()
           
     # post the data back to the server
-    req = requests.post(post_url, headers = {'content-type': 'application/json'}, data = final)
+    req = requests.post(post_url, headers = {'content-type': 'application/json', 'esp32' : 'yes'}, data = final)
