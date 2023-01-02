@@ -234,7 +234,6 @@ while True:
     final['distance'] = lowest_distance
     final['duration'] = str(diff)
     final['version'] = version
-    final['name'] = NAME
     final['lowest_perm_int'] = lowest_perm_int
     final['step_count'] = work_unit_step_count
     final['truckers_at_home'] = 1
