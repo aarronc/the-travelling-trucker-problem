@@ -12,6 +12,12 @@ import sys
 from time import sleep
 import zlib
 
+CMDR = "AnonCmdr" # Set this if you want credit to your Commander name
+TEAM = "None" # If you have a team uuid, replace it inside the double quotes
+
+# STEP_COUNT can be adjusted from 100 to 5000, 100 for short work units and 5000 for long ones
+STEP_COUNT = 1000 # adjust this to make your work units longer or shorter
+
 COMPRESSED_OCTET_STREAM = {'content-type': 'application/octet-stream', 'content-encoding': 'zlib'}
 
 # The original lookup algorithm
@@ -151,10 +157,8 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
   "31":{"name":"Avik","x":13.9688,"y":-4.59375,"z":-6.0},\
   "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
-version = "P.0.2.0"
+version = "P.0.3.0"
 
-CMDR = "EntariusFusion"
-STEP_COUNT = 500 # adjust this to make your work units longer or shorter
 # esp32's will request 1 to 5 depending on setup
 # normal client will request 100 or more
 # maximum currently is 5000
@@ -188,6 +192,7 @@ while True:
   # starts at a high amount to force the first iteration to populate the variable
   lowest_total = 9999
   lowest_perm = []
+  lowest_perm_int = 0
   start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   start = datetime.datetime.now()
   # gets the work unit from the server
@@ -196,8 +201,8 @@ while True:
   data = x.json()
   identifier = data['identifier']
   iteration = data['iteration']
-  steps = int(data['step'])
-  steps = steps * 1_000_000
+  work_unit_step_count = int(data['step'])
+  steps = work_unit_step_count * 1_000_000
   
   # sys.stdout.write("\r" + f"[{start_date}] ITR: {iteration:,} STARTED")
   # sys.stdout.flush()
@@ -222,7 +227,8 @@ while True:
     
     if distance < lowest_total:
       lowest_total = distance
-      lowest_perm = ip
+      lowest_perm = ip[:]
+      lowest_perm_int = perm_to_int(lowest_perm)
       
       
     ip = next_lexicographic_permutation(ip)
@@ -238,15 +244,16 @@ while True:
   
   # The final list is generated before being sent to the server for processing
   final = {}
+  final['cmdr'] = CMDR
+  final['team'] = TEAM
   final['identifier'] = identifier
   final['distance'] = lowest_total
   final['duration'] = str(diff)
   final['finished_at'] = finish_date
   final['version'] = version
   final['truckers_at_home'] = 1
-  # Generates the lehmer integer based on the lowest found permutation
-  # in this work block
-  final['lowest_perm_int'] = perm_to_int(lowest_perm)
+  final['lowest_perm_int'] = lowest_perm_int
+  final['step_count'] = work_unit_step_count
   final = json.dumps(final)
   sys.stdout.write("\r[{}] ITR: {:,.0f} FINISH: {} LOWEST: {}".format(finish_date, iteration, diff, lowest_total))
   sys.stdout.flush()
