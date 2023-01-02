@@ -188,7 +188,6 @@ while True:
   # starts at a high amount to force the first iteration to populate the variable
   lowest_total = 9999
   lowest_perm = []
-  lowest_perm_int = 0
   start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   start = datetime.datetime.now()
   # gets the work unit from the server
