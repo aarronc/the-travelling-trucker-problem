@@ -12,6 +12,16 @@ import network
 import urequests as requests
 import machine
 
+CMDR = "AnonCmdr" # Set this if you want credit to your Commander name
+TEAM = "None" # If you have a team uuid, replace it inside the double quotes
+STEP_COUNT = 1 # adjust this to make your work units longer or shorter. Esp32's will request 1, normal client will request 100 to 5000
+
+# Remember to set your networks username and password
+NETWORK_SSID = 'Factor_Farm'
+NETWORK_PASSWORD = 'FactorFarm#1#'
+
+led = machine.Pin(2, machine.Pin.OUT)
+
 sta_if = network.WLAN(network.STA_IF)
 
 # Set the ESP32 clock speed to maximum supported
@@ -79,6 +89,13 @@ def perm_to_int(numbers): # takes the permutation list and converts it to an int
         smaller = sum(1 for j in numbers[i + 1:] if j < num)
         lehmer += smaller * math.factorial(base - i - 1)
     return lehmer
+
+def flash_blue_led(wait_time,num_of_flashes):
+    for x in range(num_of_flashes):
+        led.value(1)
+        time.sleep(wait_time)
+        led.value(0)
+        time.sleep(wait_time)
     
 def do_connect():
     import network
@@ -86,10 +103,11 @@ def do_connect():
     if not sta_if.isconnected():
         print('connecting to network...')
         sta_if.active(True)
-        sta_if.connect('<SSID>', '<PASSWORD>')
+        sta_if.connect(NETWORK_SSID, NETWORK_PASSWORD)
         while not sta_if.isconnected():
             pass
     print('network config:', sta_if.ifconfig())
+    flash_blue_led(0.05, 10)
 
 # print("Pre dict creation memory amount : {} hash(bytes".format(gc.mem_free()))
 
@@ -128,12 +146,8 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
           "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
 
-version = "ESP32 0.2.0"
-NAME = "Sparky"
-
-STEP_COUNT = 1 # adjust this to make your work units longer or shorter
-# esp32's will request 1
-# normal client will request 100 or more
+version = "ESP32 0.2.1"
+flash_blue_led(1,1)
 
 
 get_url = 'http://hot.forthemug.com:4567/work.json/{}'.format(STEP_COUNT)
@@ -167,11 +181,12 @@ while True:
     #split out the data we need
     uuid = data['identifier']
     iteration = data['iteration']
-    steps = int(data['step'])
-    steps = steps * 1_000_000
+    work_unit_step_count = int(data['step'])
+    steps = work_unit_step_count * 1_000_000
     
     lowest_distance = 9999
     lowest_perm = []
+    lowest_perm_int = 0
     
     first_perm = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
     
@@ -197,7 +212,8 @@ while True:
           
         if distance < lowest_distance:
             lowest_distance = distance
-            lowest_perm = ip  
+            lowest_perm = ip[:]
+            lowest_perm_int = perm_to_int(lowest_perm)
     
         if y == 10_000:
             print ("Checkpoint {:,} / {:,}".format(x, steps))
@@ -212,12 +228,15 @@ while True:
     print("lowest distance in run : {}".format(lowest_distance))
 
     final = {}
+    final['cmdr'] = CMDR
+    final['team'] = TEAM
     final['identifier'] = uuid
     final['distance'] = lowest_distance
     final['duration'] = str(diff)
     final['version'] = version
     final['name'] = NAME
-    final['lowest_perm_int'] = perm_to_int(lowest_perm)
+    final['lowest_perm_int'] = lowest_perm_int
+    final['step_count'] = work_unit_step_count
     final['truckers_at_home'] = 1
     final = json.dumps(final)
     
@@ -227,3 +246,4 @@ while True:
           
     # post the data back to the server
     req = requests.post(post_url, headers = {'content-type': 'application/json', 'esp32' : 'yes'}, data = final)
+    flash_blue_led(0.5,2)
