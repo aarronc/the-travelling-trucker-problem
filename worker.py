@@ -51,7 +51,7 @@ def reverse(arr, i):
     j -= 1
     
 # New algorithm for calculating the Permutation based on a given integer
-def nthPerm(n,elems):#with n from 0
+def int_to_perm(n,elems): # with n from 0
     output = []
     while len(elems) > 0:
         if(len(elems) == 1):
@@ -65,6 +65,14 @@ def nthPerm(n,elems):#with n from 0
         output.append(v)
         n = r
     return output
+  
+def perm_to_int(numbers): # takes the permutation list and converts it to an integer thanks ChatGPT :)
+    base = len(numbers)
+    lehmer = 0
+    for i, num in enumerate(numbers):
+        smaller = sum(1 for j in numbers[i + 1:] if j < num)
+        lehmer += smaller * math.factorial(base - i - 1)
+    return lehmer
 
 # Gives some details if we are forced to back off during a connect or send event
 def backoff_hdlr(details):
@@ -146,14 +154,14 @@ lookup = json.loads(lookup)
 version = "P.0.2.0"
 
 CMDR = "EntariusFusion"
-STEP_COUNT = 5000 # adjust this to make your work units longer or shorter
+STEP_COUNT = 500 # adjust this to make your work units longer or shorter
 # esp32's will request 1 to 5 depending on setup
 # normal client will request 100 or more
 # maximum currently is 5000
 # 5000 should take a modern CPU around about 30 mins
 
-# sorted first permutation for the nthPerm lookup
-# we are no longer importing a seed as the nthPerm function
+# sorted first permutation for the int_to_perm lookup
+# we are no longer importing a seed as the int_to_perm function
 # now generates the seed for us from the iteration number
 first_perm = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
 
@@ -180,6 +188,7 @@ while True:
   # starts at a high amount to force the first iteration to populate the variable
   lowest_total = 9999
   lowest_perm = []
+  lowest_perm_int = 0
   start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
   start = datetime.datetime.now()
   # gets the work unit from the server
@@ -195,9 +204,8 @@ while True:
   # sys.stdout.flush()
   
   # the function that generated the initial seed that the main work loop uses
-  ip = nthPerm(int(iteration),first_perm[:])
+  ip = int_to_perm(int(iteration),first_perm[:])
   
-
   # The main work loop 
   # we are now doing 100M iterations (up from 10M as the run time was too fast)
   for x in range(1,steps):   
@@ -216,6 +224,7 @@ while True:
     if distance < lowest_total:
       lowest_total = distance
       lowest_perm = ip
+      
       
     ip = next_lexicographic_permutation(ip)
 
@@ -236,9 +245,11 @@ while True:
   final['finished_at'] = finish_date
   final['version'] = version
   final['truckers_at_home'] = 1
+  # Generates the lehmer integer based on the lowest found permutation
+  # in this work block
+  final['lowest_perm_int'] = perm_to_int(lowest_perm)
   final = json.dumps(final)
   sys.stdout.write("\r[{}] ITR: {:,.0f} FINISH: {} LOWEST: {}".format(finish_date, iteration, diff, lowest_total))
   sys.stdout.flush()
   # Send the final list to the server
   send_work_unit(final)
-  
