@@ -1,6 +1,5 @@
 import usocket
 
-
 class Response:
     def __init__(self, f):
         self.raw = f
@@ -194,4 +193,3 @@ def patch(url, **kw):
 
 def delete(url, **kw):
     return request("DELETE", url, **kw)
-
