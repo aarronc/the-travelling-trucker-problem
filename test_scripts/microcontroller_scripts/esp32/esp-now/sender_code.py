@@ -202,7 +202,8 @@ while True:
     
     if msg == None:
         print("No msg Found. Telling the Control Server we are empty")
-        e.send(peer, init_json_string)
+        a = e.send(peer, init_json_string, True)
+        print (a)
         continue
     
       
@@ -211,6 +212,11 @@ while True:
     
     if data['action'] == "sleep":
         print("We have been told to sleep, see you in 5 seconds....")
+        sleep(5)
+        continue
+    
+    if data['action'] == "Confirm":
+        print("Recieved a rouge confirm message, this shouldnt be here")
         sleep(5)
         continue
     
@@ -285,6 +291,20 @@ while True:
           
     # post the data back to the server
     send_over_esp_now(host, final)
+    
+    while True:
+        host, msg = e.recv(5000)
+        if msg == None:
+            print("No Confirm... resending result")
+            final = json.loads(final)
+            final['resend'] = 1
+            final = json.dumps(final)
+            send_over_esp_now(host, final)
+        else:
+            msg = json.loads(msg)
+            if msg['action'] == "confirm":
+                print("Result has been confirmed")
+                break
     
     # Flash LED's to indicate we are done with a unit
     flash_blue_led(0.5,2)
