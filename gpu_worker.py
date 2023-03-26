@@ -21,7 +21,7 @@ CMDR = "AnonCmdr" # Set this if you want credit to your Commander name
 TEAM = "None" # If you have a team uuid, replace it inside the double quotes
 
 # STEP_COUNT can be adjusted from 100 to 5000, 100 for short work units and 5000 for long ones
-STEP_COUNT = 1000 # adjust this to make your work units longer or shorter
+STEP_COUNT = 5000 # adjust this to make your work units longer or shorter
 
 COMPRESSED_OCTET_STREAM = {'content-type': 'application/octet-stream', 'content-encoding': 'zlib'}
 
