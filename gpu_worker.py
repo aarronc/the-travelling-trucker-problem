@@ -1,6 +1,8 @@
-# Working GPU Test with TAH code edit steps variable if the script fails
-# It's set to 1 Billion iterations that uses about 8GB of memory to construct the array
-# if you have less than 8GB then lower it to 600_000_000 or so
+# Working GPU with TAH code. Edit steps variable if the script fails
+# 1 Billion iterations uses about 12GB of memory to construct the array
+# if you have less than 12GB then lower it to 500_000_000 or so
+# 100_000_000 ses about 2GB
+
 import backoff
 import cupy as cp
 import datetime
