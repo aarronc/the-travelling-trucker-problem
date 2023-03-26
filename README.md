@@ -17,7 +17,8 @@ worker.py uses the CPU and requires the following modules
 - Zlib (`pip install zlib`)
 
 You can use the standard python 3 to run this but we have found the most performance increase using pypy3, this can make the program 10x faster.
-==*TIP -> You can run a copy for each physical CPU without much performance impact*==
+
+**TIP -> You can run a copy for each physical CPU without much performance impact**
 
 ## Python 3.10 GPU Version
 gpu_worker.py  has more requirements :
@@ -29,7 +30,8 @@ gpu_worker.py  has more requirements :
 - Requests (`pip install requests`)
 
 As part of the Cuda Toolkit installation process, you may have to download additional dependencies, there is a good CUDA toolkit installation guide that will take you through the whole process.
-==*Tip -> This Will only ever use 1 GPU, your Promary GPU (the one that is seen as GPU 0)*==
+
+**Tip -> This Will only ever use 1 GPU, your Promary GPU (the one that is seen as GPU 0)**
 
 ## Rust (Simulated annealing)
 This takes a different approach and uses simulated annealing to find the best route.
