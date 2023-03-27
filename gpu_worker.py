@@ -198,7 +198,7 @@ for x in range(33):
 
 
 clear()
-print("Truckers@Home")
+print("Truckers@Home GPU client")
 print("Getting work block size of {:,} Million Iterations each".format(STEP_COUNT))
 print("Beginning Work on First unit...")
 print("")
