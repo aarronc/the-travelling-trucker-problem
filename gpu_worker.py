@@ -23,7 +23,24 @@ CMDR = "AnonCmdr" # Set this if you want credit to your Commander name
 TEAM = "None" # If you have a team uuid, replace it inside the double quotes
 
 # STEP_COUNT can be adjusted from 100 to 5000, 100 for short work units and 5000 for long ones
-STEP_COUNT = 5000 # adjust this to make your work units longer or shorter
+# GPU step count should be 5000 to avoid excessive server calls
+STEP_COUNT = 5000 # adjust this to make your work units longer or shorter 
+
+# GPU steps are the amount of numbers the gpu will fill a matrix with and process to get a result.
+# if your work unit has a step size of 1000, the total numbers that need to be processed is 1 billion
+# so the client will break the work unit up into 10 100_000_000 steps to process the entire result
+# a gpu_steps size of 100 million usually uses aroung 3GB of GPU memory
+# Adjusting this higher can SLIGHTLY increase GPU performance and lower overall work unit time
+# unless you have a lot of GPU memory its advised not to go over 250 Million gpu_steps
+gpu_steps = 100_000_000
+
+# This dedicates GPU cores to blocks of work (the GPU sorts of the work allocation behind the scenes)
+# 32 seems to give the best result for processing this type of work
+threadsperblock = 32
+blockspergrid = (gpu_steps + threadsperblock - 1) // threadsperblock
+
+# Client Version
+version = "GPU.0.2"
 
 COMPRESSED_OCTET_STREAM = {'content-type': 'application/octet-stream', 'content-encoding': 'zlib'}
 
@@ -124,7 +141,7 @@ def clear():
 # used for updating against checkpoints. not currently in use
 def output_things(iteration, lowest, identifier):
   clear()
-  print("Truckers@Home")
+  print("Truckers@Home GPU client")
   print("Working on unit : {:,.0f}".format(identifier))
   print("[{}] Checkpoint {:,.0f} / 10".format(datetime.datetime.now().strftime("%H:%M:%S"), iteration / 1_000_000))
   print("Lowest Distance found so far ({:,.3f})".format(lowest))
@@ -166,7 +183,6 @@ lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125}
   "31":{"name":"Avik","x":13.9688,"y":-4.59375,"z":-6.0},\
   "32":{"name":"George Pantazis","x":-12.0938,"y":-16.0,"z":-14.2188}}'
 lookup = json.loads(lookup)
-version = "GPU.0.1"
 
 # First permutation of our array
 elems = cp.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32], dtype=cp.int64)
@@ -180,16 +196,13 @@ for x in range(33):
     else:
       b[x][y] = math.sqrt(((lookup[str(x)]["x"] - lookup[str(y)]['x']) ** 2) + ((lookup[str(x)]['y'] - lookup[str(y)]['y']) ** 2) + ((lookup[str(x)]['z'] - lookup[str(y)]['z']) ** 2))
 
-# Set number of iterations per gpu run 100M generates a small integer matrix ok for standard gfx cards
-# (1 Billion is on par with what the CPU does but uses about 8GB of GPU Memory) larger runs can reduce total
-# execution time and make results quicker
+
 clear()
 print("Truckers@Home")
 print("Getting work block size of {:,} Million Iterations each".format(STEP_COUNT))
 print("Beginning Work on First unit...")
 print("")
 
-gpu_steps = 100_000_000
 
 while True:
     # gets the work unit from the server
@@ -206,7 +219,6 @@ while True:
     # all of our runs to cover all steps
     gpu_processing_runs = math.ceil(steps / gpu_steps)
 
-
     # declare the variables passed in to hold our minimum values for sending off when this becomes a full worker client
     min_result = cp.array([cp.finfo(cp.float32).max], dtype=cp.float32)
     min_n_value = cp.array([0], dtype=cp.uint64)
@@ -214,36 +226,18 @@ while True:
     start_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     start = datetime.datetime.now()
 
-
-    # print(f"GPU is doing {gpu_processing_runs:,} runs!")
-
-
-
     for i in range(gpu_processing_runs):
-        # print(f"Run {i + 1} -> Starting at : {start_number:,}")
         # stop number is how many iterations you want from the start
         stop_number = (start_number + gpu_steps)
 
         # creates a 1d array of consecutive numbers from start to stop number
-        
         integer_matrix = cp.arange(start_number,stop_number,1, dtype=cp.uint64)
-        
-
-        # print(f"Time taken to build array of {gpu_steps:,} values : {(e-s)}")
-
-        # this dedicates gpu cores to blocks of work (the GPU sorts of the work allocation)
-        # Seems to give the best result for processing this type of work
-        threadsperblock = 32
-        blockspergrid = (gpu_steps + threadsperblock - 1) // threadsperblock
-
-        
+                
         # Main event is wrapped in timing vars
         int_to_perm_kernel[blockspergrid, threadsperblock](integer_matrix, elems, b, min_result, min_n_value)
-        e = time.time()
-
+        
+        # Create new start number for the next loop
         start_number = stop_number
-
-    # Print the minimum value and its corresponding n value    
         
     finish = datetime.datetime.now()
     finish_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
