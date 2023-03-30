@@ -150,7 +150,7 @@ version = "ESP32 0.2.1"
 flash_blue_led(1,1)
 
 
-get_url = 'http://hot.forthemug.com:4567/work.json/{}'.format(STEP_COUNT)
+get_url = 'http://hot.forthemug.com:4567/work.json/{}/E'.format(STEP_COUNT)
 post_url = 'http://hot.forthemug.com:4567/result'
 
 do_connect() # Connect to network
