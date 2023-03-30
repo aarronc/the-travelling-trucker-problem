@@ -4,7 +4,7 @@ When flashing the ESP32 you need to install the micropython bin file if you have
  
 You need to run the following command to erase the esp32 :
 
-  python -m esptool –-chip esp32 erase_flash
+  python -m esptool -c esp32 erase_flash
 
 and the following command to write micropython to the device :
 
