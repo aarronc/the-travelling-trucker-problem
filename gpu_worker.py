@@ -24,7 +24,7 @@ TEAM = "None" # If you have a team uuid, replace it inside the double quotes
 
 # STEP_COUNT can be adjusted from 100 to 5000, 100 for short work units and 5000 for long ones
 # GPU step count should be 5000 to avoid excessive server calls
-STEP_COUNT = 5000 # adjust this to make your work units longer or shorter 
+STEP_COUNT = 50_000 # adjust this to make your work units longer or shorter 
 
 # GPU steps are the amount of numbers the gpu will fill a matrix with and process to get a result.
 # if your work unit has a step size of 1000, the total numbers that need to be processed is 1 billion
@@ -146,7 +146,7 @@ def output_things(iteration, lowest, identifier):
   print("[{}] Checkpoint {:,.0f} / 10".format(datetime.datetime.now().strftime("%H:%M:%S"), iteration / 1_000_000))
   print("Lowest Distance found so far ({:,.3f})".format(lowest))
   
-get_url = 'http://hot.forthemug.com:4567/work.json/{}'.format(STEP_COUNT)
+get_url = 'http://hot.forthemug.com:4567/work.json/{}/G'.format(STEP_COUNT)
 post_url = 'http://hot.forthemug.com:4567/result'
   
 lookup = '{"0":{"name":"van Maanen\'s Star","x":-6.3125,"y":-11.6875,"z":-4.125},\
