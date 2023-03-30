@@ -180,7 +180,7 @@ for x in range(33):
 
 
 # Changed the URL to a small work server from the old hosted one
-get_url = 'http://hot.forthemug.com:4567/work.json/{}'.format(STEP_COUNT)
+get_url = 'http://hot.forthemug.com:4567/work.json/{}/C'.format(STEP_COUNT)
 post_url = 'http://hot.forthemug.com:4567/result'
 clear()
 print("Truckers@Home")
